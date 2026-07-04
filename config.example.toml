@@ -1,0 +1,34 @@
+# Aurora Voice configuration.
+# Copy this file to config.toml and edit. Any omitted key falls back to
+# the defaults in app/config.py.
+
+[hotkey]
+key = "f9"
+mode = "hold"              # "hold" (push-to-talk) or "toggle" (tap to start/stop)
+
+[asr]
+model = "large-v3"
+compute_type = "int8"      # int8 ~2.1 GB VRAM. float16 (~4.7 GB) can spill to
+                           # system RAM on a busy desktop -> slow. "turbo" is
+                           # fastest but drops punctuation on some audio.
+language = "en"            # empty = auto-detect
+
+[vocab]
+# Personal dictionary: biases transcription AND cleanup toward these spellings.
+words = ["Ollama", "faster-whisper", "CTranslate2"]
+
+[commands]
+enabled = true             # "new paragraph", "delete that", "press enter", ...
+
+[cleanup]
+enabled = true
+model = "llama3.2:latest"  # any Ollama chat model; 3B-class is plenty
+keep_alive = "30m"         # hold model in VRAM between dictations
+timeout_s = 8.0            # on timeout, the raw transcript is injected instead
+
+[ui]
+sounds = true
+overlay = true             # Aurora Silk voice-wave overlay
+overlay_opacity = 0.85
+overlay_margin_bottom = 24
+overlay_fps = 60
