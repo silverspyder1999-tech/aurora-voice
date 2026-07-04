@@ -10,6 +10,12 @@ desktop and dances with your voice while you speak.
 
 > Not affiliated with or endorsed by Wispr AI.
 
+<p align="center">
+  <img src="docs/img/overlay-vowel.png" width="760" alt="Aurora Silk overlay — a glowing ribbon whose shape is your voice">
+  <br>
+  <em>The Aurora Silk overlay — a per-pixel-alpha glow ribbon whose shape, height, and colour <b>are</b> your voice.</em>
+</p>
+
 ## How it works
 
 ```
@@ -37,6 +43,21 @@ hold F9 → mic capture → Silero VAD → faster-whisper large-v3 (CUDA)
 | 🪟 **Context profiles** | Detects the target app: code editors/terminals get raw text (identifiers safe), email gets professional tone, chat stays casual |
 | ⌨️ **PTT modes** | Hold-to-talk or tap-to-toggle |
 | 🖥 **Tray + autostart** | Status icon (idle/rec/busy), single-instance, headless logging |
+
+## The Aurora Silk overlay
+
+The overlay floats on your desktop while you dictate — no window, no box, just a
+glowing strand ribbon drawn from a live mel spectrum of your voice at ~60 fps. Its
+**shape** follows your frequencies and its **colour** follows your voice: warm amber
+for open vowels and low tones, cool cyan for sibilants and highs, paling on whispers
+and flaring on hard consonants.
+
+|  |  |
+|:--:|:--:|
+| <img src="docs/img/overlay-at-rest.png" width="420" alt="Aurora Silk overlay at rest"><br>**Listening — at rest**<br><sub>calm amber, breathing gently while it waits for your voice</sub> | <img src="docs/img/overlay-vowel.png" width="420" alt="Aurora Silk overlay on a vowel"><br>**Vowel**<br><sub>warm amber, energy pooled in the low bands (left)</sub> |
+| <img src="docs/img/overlay-sibilant.png" width="420" alt="Aurora Silk overlay on a sibilant"><br>**Sibilant**<br><sub>shifts cyan as high-frequency energy (right) takes over</sub> | <img src="docs/img/overlay-loud.png" width="420" alt="Aurora Silk overlay on loud speech"><br>**Loud speech**<br><sub>the whole ribbon lights up and flares on consonant onsets</sub> |
+
+<sub>Rendered headlessly from `app/overlay.py` — the same code that draws the live overlay. See `docs/VISUAL-RESEARCH.md` for the design research behind it.</sub>
 
 ## Requirements
 
