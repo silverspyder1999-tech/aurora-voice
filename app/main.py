@@ -171,9 +171,15 @@ def main():
                     continue
                 inj_s = inject.inject(text, cfg)
                 ctx_note = f" | ctx {prof_name}({exe})" if prof_name else ""
-                print(f"  {n_s:.1f}s audio | asr {asr_s:.2f}s | llm {llm_s:.2f}s "
+                print(f"  {n_s:.1f}s audio | asr {asr_s:.2f}s({transcriber.last_device}) | llm {llm_s:.2f}s "
                       f"| inject {inj_s:.2f}s | total {asr_s + llm_s + inj_s:.2f}s{ctx_note}")
                 print(f"  >> {text!r}" if "\n" in text else f"  >> {text}")
+            except Exception as e:
+                # ponytail: one ASR failure must not kill the worker thread and
+                # wedge the maxsize=1 queue forever (was: unhandled -> thread dies
+                # -> every later f9 dropped as "busy"). Log, beep, keep looping.
+                print(f"  (transcription failed: {type(e).__name__}: {e})")
+                beep(cfg, 300)
             finally:
                 set_state("idle")
 

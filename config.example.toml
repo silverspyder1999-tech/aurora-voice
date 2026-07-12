@@ -7,8 +7,14 @@ key = "f9"
 mode = "hold"              # "hold" (push-to-talk) or "toggle" (tap to start/stop)
 
 [asr]
-model = "large-v3"
-compute_type = "int8"      # int8 ~2.1 GB VRAM. float16 (~4.7 GB) can spill to
+model = "large-v3"             # GPU model (full accuracy)
+cpu_model = "distil-large-v3"  # CPU-fallback model; faster on CPU. Set = model for max accuracy.
+device = "auto"                # "auto" = GPU when it has free VRAM, else CPU (safe alongside GPU
+                               # renders). Force with "cuda" or "cpu".
+gpu_min_free_mib = 4000        # auto: need >= this much free VRAM to use the GPU; below it -> CPU.
+gpu_poll_s = 4                 # auto: background watcher frees the idle GPU model this often once
+                               # VRAM tightens, so a render never waits on whisper's VRAM.
+compute_type = "int8"          # int8 ~2.1 GB VRAM. float16 (~4.7 GB) can spill to
                            # system RAM on a busy desktop -> slow. "turbo" is
                            # fastest but drops punctuation on some audio.
 language = "en"            # empty = auto-detect
