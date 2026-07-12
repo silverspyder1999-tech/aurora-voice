@@ -27,6 +27,9 @@ def free_vram_mib() -> int:
         out = subprocess.run(
             ["nvidia-smi", "--query-gpu=memory.free", "--format=csv,noheader,nounits"],
             capture_output=True, text=True, timeout=2,
+            # pythonw has no console, so spawning nvidia-smi pops a console window
+            # every poll. CREATE_NO_WINDOW suppresses it (no-op / 0 off Windows).
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         ).stdout.strip().splitlines()[0]
         return int(out)
     except Exception:
