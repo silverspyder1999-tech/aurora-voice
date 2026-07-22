@@ -205,7 +205,10 @@ class Overlay:
         return np.asarray(frame, dtype=np.uint8)
 
     # -- render thread -----------------------------------------------------
-    def _run(self):
+    def _make_window(self) -> bool:
+        """(Re)create the layered window at the current work-area bottom-center.
+        Geometry is recomputed each call so a resolution/DPI change can't strand
+        it off-screen after a rebuild."""
         ensure_dpi_aware()
         left, top, right, bottom = primary_work_area()
         x = left + (right - left - self.W) // 2
@@ -213,8 +216,14 @@ class Overlay:
         self.geometry = (x, y, self.W, self.H)
         try:
             self.win = LayeredWindow(x, y, self.W, self.H)
+            return True
         except Exception as e:
-            print(f"[overlay] layered window failed ({e}) - overlay disabled")
+            print(f"[overlay] layered window create failed ({e})")
+            self.win = None
+            return False
+
+    def _run(self):
+        if not self._make_window():
             return
 
         budget = 1.0 / max(20, self.fps)
@@ -223,41 +232,55 @@ class Overlay:
         self.frames = 0  # perf probe for tests
         while True:
             try:
-                while True:
-                    new = self._q.get_nowait()
-                    if new != "hidden" and self._state == "hidden":
-                        self._floor = self._peak = None      # recalibrate mic gain
-                        self._last_raw = None
-                    self._state = new
-            except queue.Empty:
-                pass
+                try:
+                    while True:
+                        new = self._q.get_nowait()
+                        if new != "hidden" and self._state == "hidden":
+                            self._floor = self._peak = None  # recalibrate mic gain
+                            self._last_raw = None
+                        self._state = new
+                except queue.Empty:
+                    pass
 
-            now = time.time()
-            dt = min(0.05, now - last)
-            last = now
+                now = time.time()
+                dt = min(0.05, now - last)
+                last = now
 
-            # fade toward visible/hidden; actually hide window at fade 0
-            target_fade = 0.0 if self._state == "hidden" else 1.0
-            step = dt / (0.12 if target_fade > self._fade else 0.18)
-            self._fade = min(1.0, max(0.0, self._fade + math.copysign(step, target_fade - self._fade))) \
-                if abs(target_fade - self._fade) > 1e-3 else target_fade
+                # fade toward visible/hidden; actually hide window at fade 0
+                target_fade = 0.0 if self._state == "hidden" else 1.0
+                step = dt / (0.12 if target_fade > self._fade else 0.18)
+                self._fade = min(1.0, max(0.0, self._fade + math.copysign(step, target_fade - self._fade))) \
+                    if abs(target_fade - self._fade) > 1e-3 else target_fade
 
-            if self._fade <= 0.0:
-                if shown:
-                    self.win.hide()
-                    shown = False
-                time.sleep(0.05)
-                continue
+                if self._fade <= 0.0:
+                    if shown:
+                        self.win.hide()
+                        shown = False
+                    time.sleep(0.05)
+                    continue
 
-            self._analyze(dt)
-            frame = self._render()
-            self.win.push(frame, opacity=self._fade * self.opacity, premultiplied=True)
-            if not shown:
-                self.win.show()
-                shown = True
-            self.win.pump()
-            self.frames += 1
+                self._analyze(dt)
+                frame = self._render()
+                self.win.push(frame, opacity=self._fade * self.opacity, premultiplied=True)
+                if not shown:
+                    self.win.show()
+                    shown = True
+                self.win.pump()
+                self.frames += 1
 
-            elapsed = time.time() - now
-            if elapsed < budget:
-                time.sleep(budget - elapsed)
+                elapsed = time.time() - now
+                if elapsed < budget:
+                    time.sleep(budget - elapsed)
+            except Exception as e:
+                # ponytail: a transient GDI/render fault (display-mode change or a
+                # GPU driver reset invalidating the layered-window DC) must NOT kill
+                # this daemon thread and take the wave down until the next app
+                # restart. Log, rebuild the window, and resume. Backoff avoids a
+                # tight spin if the rebuild itself keeps failing.
+                print(f"[overlay] render error ({type(e).__name__}: {e}); rebuilding")
+                shown = False
+                self._fade = 0.0
+                time.sleep(0.5)
+                if not self._make_window():
+                    time.sleep(2.0)
+                last = time.time()

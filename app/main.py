@@ -3,6 +3,7 @@
 Run:  venv\\Scripts\\python.exe -m app.main
 """
 import ctypes
+import os
 import queue
 import sys
 import threading
@@ -31,9 +32,13 @@ def _setup_headless_logging():
 
 def _single_instance() -> bool:
     """Named mutex so autostart + a manual launch can't both hook F9
-    (two instances would double-paste every dictation)."""
-    ctypes.windll.kernel32.CreateMutexW(None, False, "Global\\aurora-voice-singleton")
-    return ctypes.windll.kernel32.GetLastError() != 183  # ERROR_ALREADY_EXISTS
+    (two instances would double-paste every dictation). use_last_error is
+    required: reading ERROR_ALREADY_EXISTS through windll.GetLastError() is racy
+    and let two simultaneous logon launches BOTH slip through (observed: a venv
+    and a system-Python copy running at once)."""
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    k32.CreateMutexW(None, False, "Global\\aurora-voice-singleton")
+    return ctypes.get_last_error() != 183  # ERROR_ALREADY_EXISTS
 
 
 def beep(cfg, freq, ms=80):
@@ -96,7 +101,8 @@ def main():
     _setup_headless_logging()
     if not _single_instance():
         print("[aurora-voice] another instance is already running - exiting")
-        return
+        os._exit(0)  # hard exit: heavy imports (torch/ctranslate2) leave non-daemon
+        # threads that would keep a plain `return` process alive as a zombie.
     cfg = config.load()
     print(f"[aurora-voice] loading ASR model {cfg['asr']['model']} "
           f"({cfg['asr']['compute_type']}) ...")
@@ -150,7 +156,7 @@ def main():
 
     def worker():
         while True:
-            clip, exe = jobs.get()
+            clip, exe, target = jobs.get()
             set_state("busy")
             try:
                 n_s = len(clip) / cfg["audio"]["sample_rate"]
@@ -165,6 +171,9 @@ def main():
                     beep(cfg, 300)
                     continue
                 text, action, llm_s = process_text(raw, cleaner, cfg, profile)
+                # put focus back where the user was dictating, so text lands at
+                # the original click even if they clicked away while we thought.
+                context.restore_target(target)
                 if action:
                     ACTIONS[action]()
                     print(f"  {n_s:.1f}s audio | asr {asr_s:.2f}s | command: {action}")
@@ -191,7 +200,8 @@ def main():
 
     def start_rec():
         state["down"] = True
-        state["exe"] = context.get_foreground_exe()  # capture dictation target
+        state["exe"] = context.get_foreground_exe()  # capture dictation target (profile)
+        state["target"] = context.capture_target()   # capture window+control (inject)
         rec.begin()
         set_state("rec")
         beep(cfg, 880, 60)
@@ -204,7 +214,7 @@ def main():
         set_state("busy")
         beep(cfg, 440, 60)
         try:
-            jobs.put_nowait((clip, state.get("exe", "")))
+            jobs.put_nowait((clip, state.get("exe", ""), state.get("target")))
         except queue.Full:
             print("  (busy with previous dictation - dropped)")
             set_state("idle")
