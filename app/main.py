@@ -19,6 +19,20 @@ import keyboard  # noqa: E402
 
 from app import asr, audio, cleanup, commands, config, context, inject, streaming  # noqa: E402
 
+HEARTBEAT_S = 15
+_HEARTBEAT_FILE = Path(__file__).resolve().parent.parent / "aurora.heartbeat"
+
+
+def _beat():
+    """Touch aurora.heartbeat so aurora-watchdog knows the worker is alive.
+    The worker itself writes it, so if the worker thread dies (or hangs) the
+    beat stops and the watchdog restarts Aurora - the wedge that silently
+    dropped every dictation."""
+    try:
+        _HEARTBEAT_FILE.write_text(str(int(time.time())))
+    except Exception:
+        pass
+
 
 def _setup_headless_logging():
     """Under pythonw.exe (autostart, no console) stdout/stderr are None and
@@ -161,7 +175,12 @@ def main():
 
     def worker():
         while True:
-            clip, exe, target = jobs.get()
+            try:
+                clip, exe, target = jobs.get(timeout=HEARTBEAT_S)
+            except queue.Empty:
+                _beat()  # idle heartbeat: worker alive, just nothing to do
+                continue
+            _beat()
             set_state("busy")
             try:
                 n_s = len(clip) / cfg["audio"]["sample_rate"]
@@ -196,6 +215,7 @@ def main():
                 beep(cfg, 300)
             finally:
                 set_state("idle")
+                _beat()
 
     threading.Thread(target=worker, daemon=True).start()
 

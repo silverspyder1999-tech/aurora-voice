@@ -54,6 +54,8 @@ class Cleaner:
             "messages": [{"role": "system", "content": system}, *FEWSHOT,
                          {"role": "user", "content": user_text}],
             "stream": False,
+            "think": False,  # qwen3.5 & other reasoning models: skip <think> so the
+                             # answer lands in message.content within the time budget
             "keep_alive": self.keep_alive,
             "options": {"temperature": 0.1},
         }).encode()

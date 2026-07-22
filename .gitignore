@@ -4,3 +4,4 @@ __pycache__/
 .models/
 *.log
 config.toml
+aurora.heartbeat
