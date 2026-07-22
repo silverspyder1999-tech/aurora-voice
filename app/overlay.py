@@ -210,6 +210,12 @@ class Overlay:
         Geometry is recomputed each call so a resolution/DPI change can't strand
         it off-screen after a rebuild."""
         ensure_dpi_aware()
+        old = getattr(self, "win", None)
+        if old is not None:
+            try:
+                old.destroy()  # release the stale window + DCs before rebuilding
+            except Exception:
+                pass
         left, top, right, bottom = primary_work_area()
         x = left + (right - left - self.W) // 2
         y = bottom - self.H - self.margin_bottom
@@ -261,7 +267,10 @@ class Overlay:
 
                 self._analyze(dt)
                 frame = self._render()
-                self.win.push(frame, opacity=self._fade * self.opacity, premultiplied=True)
+                if not self.win.push(frame, opacity=self._fade * self.opacity, premultiplied=True):
+                    # UpdateLayeredWindow silently no-op'd (stale DC): window is
+                    # visible but blank. Force a rebuild via the except path.
+                    raise RuntimeError("UpdateLayeredWindow failed - stale DC, rebuilding")
                 if not shown:
                     self.win.show()
                     shown = True

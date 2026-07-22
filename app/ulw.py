@@ -126,9 +126,13 @@ class LayeredWindow:
             raise ctypes.WinError()
         _g32.SelectObject(self._mem_dc, self._dib)
 
-    def push(self, rgba: np.ndarray, opacity: float = 1.0, premultiplied: bool = False):
+    def push(self, rgba: np.ndarray, opacity: float = 1.0, premultiplied: bool = False) -> bool:
         """Composite an RGBA uint8 frame onto the desktop. Pass premultiplied=True
-        if RGB is already multiplied by alpha (correct for blurred/composited art)."""
+        if RGB is already multiplied by alpha (correct for blurred/composited art).
+        Returns False if UpdateLayeredWindow failed - it does NOT raise, so the
+        caller must check: a stale screen DC (display-mode change, GPU reset, or
+        return from the lock/secure desktop) makes it silently no-op forever, and
+        the only fix is to rebuild the window + DCs."""
         if premultiplied:
             prem = rgba[..., :3]
         else:
@@ -144,15 +148,41 @@ class LayeredWindow:
                                AC_SRC_ALPHA)
         pos, size = _POINT(self.x, self.y), _SIZE(self.w, self.h)
         src = _POINT(0, 0)
-        _u32.UpdateLayeredWindow(self.hwnd, self._screen_dc, ctypes.byref(pos),
-                                 ctypes.byref(size), self._mem_dc, ctypes.byref(src),
-                                 0, ctypes.byref(blend), ULW_ALPHA)
+        ok = _u32.UpdateLayeredWindow(self.hwnd, self._screen_dc, ctypes.byref(pos),
+                                      ctypes.byref(size), self._mem_dc, ctypes.byref(src),
+                                      0, ctypes.byref(blend), ULW_ALPHA)
+        return bool(ok)
 
     def show(self):
         _u32.ShowWindow(self.hwnd, SW_SHOWNOACTIVATE)
 
     def hide(self):
         _u32.ShowWindow(self.hwnd, SW_HIDE)
+
+    def destroy(self):
+        """Release GDI resources + the window so a rebuild starts clean. Must run
+        on the owning thread (the render thread that created it)."""
+        for attr, freer in (("_dib", _g32.DeleteObject),
+                            ("_mem_dc", _g32.DeleteDC)):
+            h = getattr(self, attr, None)
+            if h:
+                try:
+                    freer(h)
+                except Exception:
+                    pass
+                setattr(self, attr, None)
+        if getattr(self, "_screen_dc", None):
+            try:
+                _u32.ReleaseDC(None, self._screen_dc)
+            except Exception:
+                pass
+            self._screen_dc = None
+        if getattr(self, "hwnd", None):
+            try:
+                _u32.DestroyWindow(self.hwnd)
+            except Exception:
+                pass
+            self.hwnd = None
 
     def pump(self):
         """Drain pending window messages (call each frame from the owner thread)."""
