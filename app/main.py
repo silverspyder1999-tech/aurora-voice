@@ -116,7 +116,12 @@ def main():
     if cleaner.enabled:
         warm = cleaner.warmup()
         if warm is None:
-            print("[aurora-voice] WARNING: Ollama unreachable - raw transcripts only")
+            time.sleep(3)             # autostart can beat Ollama to the boot line
+            warm = cleaner.warmup()   # one re-probe before giving up
+        if warm is None:
+            # Not a latch: clean() re-probes per call, so cleanup engages the
+            # moment Ollama comes up - the first non-code dictation just pays a cold load.
+            print("[aurora-voice] Ollama not ready - cleanup will engage automatically once it's up")
         else:
             print(f"[aurora-voice] cleanup LLM warm in {warm:.1f}s ({cfg['cleanup']['model']})")
 
