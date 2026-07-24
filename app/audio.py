@@ -63,12 +63,17 @@ class Recorder:
             self._frames = []
         self._recording = True
 
-    def end(self) -> np.ndarray:
-        self._recording = False
+    def snapshot(self) -> np.ndarray:
+        """All audio captured so far, WITHOUT stopping recording. Used by instant
+        mode to transcribe the growing buffer while the user is still speaking."""
         with self._lock:
             if not self._frames:
                 return np.zeros(0, dtype=np.float32)
             return np.concatenate(self._frames)
+
+    def end(self) -> np.ndarray:
+        self._recording = False
+        return self.snapshot()
 
     def close(self):
         self._recording = False
