@@ -17,7 +17,7 @@ bootstrap.preload_cuda_dlls()  # must precede faster_whisper import (app.asr)
 
 import keyboard  # noqa: E402
 
-from app import asr, audio, cleanup, commands, config, context, inject  # noqa: E402
+from app import asr, audio, cleanup, commands, config, context, inject, streaming  # noqa: E402
 
 
 def _setup_headless_logging():
@@ -201,6 +201,9 @@ def main():
 
     key = cfg["hotkey"]["key"]
     mode = cfg["hotkey"]["mode"]
+    instant = cfg["streaming"]["enabled"]
+    stream_interval = cfg["streaming"]["interval_s"]
+    min_tick = int(0.2 * cfg["audio"]["sample_rate"])  # skip near-empty snapshots
     state = {"down": False}
 
     def start_rec():
@@ -210,14 +213,48 @@ def main():
         rec.begin()
         set_state("rec")
         beep(cfg, 880, 60)
+        if instant:
+            context.restore_target(state["target"])   # type into the field they aimed at
+            sess = streaming.InstantSession(keyboard.write)
+            stop_evt = threading.Event()
+            state["sess"], state["stop_evt"] = sess, stop_evt
+
+            def stream_loop():
+                while not stop_evt.is_set():
+                    t0 = time.time()
+                    audio = rec.snapshot()
+                    if len(audio) >= min_tick:
+                        try:
+                            text, _ = transcriber.transcribe(audio)
+                            sess.tick(text)
+                        except Exception as e:
+                            print(f"  (instant tick failed: {type(e).__name__}: {e})")
+                    dt = stream_interval - (time.time() - t0)
+                    stop_evt.wait(dt if dt > 0 else 0)
+
+            state["stream_thread"] = threading.Thread(target=stream_loop, daemon=True)
+            state["stream_thread"].start()
         stop_hint = f"release {key}" if mode == "hold" else f"press {key} again"
-        print(f"[rec] listening ... ({stop_hint} to transcribe)")
+        print(f"[rec] listening ... ({stop_hint} to {'stream' if instant else 'transcribe'})")
 
     def stop_rec():
         state["down"] = False
+        beep(cfg, 440, 60)
+        if instant:
+            state["stop_evt"].set()
+            state["stream_thread"].join(timeout=3)
+            clip = rec.end()
+            try:
+                text, _ = transcriber.transcribe(clip)
+                state["sess"].finalize(text)   # type whatever tail wasn't committed
+            except Exception as e:
+                print(f"  (instant finalize failed: {type(e).__name__}: {e})")
+            n_s = len(clip) / cfg["audio"]["sample_rate"]
+            print(f"  {n_s:.1f}s audio | instant({transcriber.last_device})")
+            set_state("idle")
+            return
         clip = rec.end()
         set_state("busy")
-        beep(cfg, 440, 60)
         try:
             jobs.put_nowait((clip, state.get("exe", ""), state.get("target")))
         except queue.Full:

@@ -26,6 +26,11 @@ words = ["Ollama", "faster-whisper", "CTranslate2"]
 [commands]
 enabled = true             # "new paragraph", "delete that", "press enter", ...
 
+[streaming]
+enabled = false            # instant mode: type words as you speak (raw, no cleanup/commands).
+                           # false = batch mode (transcribe on key-release, with LLM cleanup).
+interval_s = 1.0           # how often to re-transcribe the growing buffer while you talk
+
 [cleanup]
 enabled = true
 model = "llama3.2:latest"  # any Ollama chat model; 3B-class is plenty
