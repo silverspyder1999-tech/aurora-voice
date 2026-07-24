@@ -38,6 +38,10 @@ DEFAULTS = {
     "commands": {                    # Phase 3: voice commands
         "enabled": True,
     },
+    "streaming": {                   # instant mode: type words as you speak
+        "enabled": False,            # off = batch mode (transcribe on release, with cleanup)
+        "interval_s": 1.0,           # how often to re-transcribe the growing buffer
+    },
     "profiles": {                    # Phase 4: per-app context profiles
         "code": {
             "match": ["Code.exe", "WindowsTerminal.exe", "devenv.exe",
