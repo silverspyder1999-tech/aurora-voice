@@ -64,6 +64,7 @@ DEFAULTS = {
         "min_record_s": 0.3,         # ignore accidental taps
         "tray": True,                # system tray icon
         "overlay": True,             # voice-wave overlay while dictating
+        "overlay_follow_caret": True,  # place overlay near the text cursor (else screen bottom-center)
         "overlay_opacity": 0.85,     # 0..1 window translucency
         "overlay_margin_bottom": 24, # px above the taskbar
     },

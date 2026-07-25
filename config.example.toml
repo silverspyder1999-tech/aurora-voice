@@ -40,6 +40,7 @@ timeout_s = 8.0            # on timeout, the raw transcript is injected instead
 [ui]
 sounds = true
 overlay = true             # Aurora Silk voice-wave overlay
+overlay_follow_caret = true # place the ribbon near the text cursor (false = screen bottom-center)
 overlay_opacity = 0.85
 overlay_margin_bottom = 24
 overlay_fps = 60

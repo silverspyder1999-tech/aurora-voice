@@ -80,6 +80,41 @@ class _GUITHREADINFO(ctypes.Structure):
 
 _user32.GetGUIThreadInfo.argtypes = [wintypes.DWORD, ctypes.POINTER(_GUITHREADINFO)]
 _user32.GetGUIThreadInfo.restype = wintypes.BOOL
+_user32.ClientToScreen.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.POINT)]
+_user32.ClientToScreen.restype = wintypes.BOOL
+_user32.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(_RECT)]
+_user32.GetWindowRect.restype = wintypes.BOOL
+
+
+def caret_screen_rect() -> tuple[int, int, int, int] | None:
+    """Best-effort screen rect (x, y, w, h) of where the user is typing, so the
+    overlay can appear near the cursor. Tries, in order: the text caret (native
+    edit fields expose it), the focused control's window, then the foreground
+    window. None if nothing is focused. Many Electron/browser apps report no
+    caret, so callers must treat this as a hint, not a guarantee."""
+    hwnd = _user32.GetForegroundWindow()
+    if not hwnd:
+        return None
+    tid = _user32.GetWindowThreadProcessId(hwnd, None)
+    if tid:
+        gi = _GUITHREADINFO()
+        gi.cbSize = ctypes.sizeof(_GUITHREADINFO)
+        if _user32.GetGUIThreadInfo(tid, ctypes.byref(gi)):
+            c = gi.rcCaret
+            ch = c.bottom - c.top
+            # caret coords are client-relative to hwndCaret; map to screen
+            if gi.hwndCaret and ch > 0:
+                pt = wintypes.POINT(c.left, c.top)
+                if _user32.ClientToScreen(gi.hwndCaret, ctypes.byref(pt)):
+                    return (pt.x, pt.y, max(c.right - c.left, 1), ch)
+            if gi.hwndFocus and _user32.IsWindow(gi.hwndFocus):
+                r = _RECT()
+                if _user32.GetWindowRect(gi.hwndFocus, ctypes.byref(r)):
+                    return (r.left, r.top, r.right - r.left, r.bottom - r.top)
+    r = _RECT()
+    if _user32.GetWindowRect(hwnd, ctypes.byref(r)):
+        return (r.left, r.top, r.right - r.left, r.bottom - r.top)
+    return None
 
 
 def capture_target():

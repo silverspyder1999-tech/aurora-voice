@@ -86,11 +86,26 @@ class Overlay:
         bx = (2 * self._u - 1) * 2.0
         self._bell = (4.0 / (4.0 + np.abs(bx) ** 4)) ** 1.5
 
+        self._pending_pos = None                    # (x, y) to move the window to
         self._thread = threading.Thread(target=self._run, daemon=True, name="aurora")
 
     # -- public API (any thread) ------------------------------------------
     def start(self):
         self._thread.start()
+
+    def place(self, cx: int, cy: int):
+        """Anchor the ribbon near a screen point (where the user is typing):
+        centered horizontally on cx, floating just below cy, clamped on-screen.
+        Falls above the point if it would drop off the bottom. Applied on the
+        next frame by the render thread."""
+        left, top, right, bottom = primary_work_area()
+        x = int(cx - self.W / 2)
+        y = int(cy) + 8                             # just below the caret line
+        if y + self.H > bottom:                     # would fall off bottom -> go above
+            y = int(cy) - self.H - 8
+        x = max(left, min(x, right - self.W))
+        y = max(top, min(y, bottom - self.H))
+        self._pending_pos = (x, y)
 
     def show(self):
         self._q.put("listening")
@@ -282,6 +297,9 @@ class Overlay:
                     time.sleep(0.05)
                     continue
 
+                if self._pending_pos is not None:
+                    self.win.x, self.win.y = self._pending_pos   # move near the caret
+                    self._pending_pos = None
                 self._analyze(dt)
                 frame = self._render()
                 if not self.win.push(frame, opacity=self._fade * self.opacity, premultiplied=True):
