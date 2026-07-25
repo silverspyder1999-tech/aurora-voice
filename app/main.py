@@ -210,6 +210,10 @@ def main():
         state["down"] = True
         state["exe"] = context.get_foreground_exe()  # capture dictation target (profile)
         state["target"] = context.capture_target()   # capture window+control (inject)
+        if overlay_ui and cfg["ui"].get("overlay_follow_caret", True):
+            r = context.caret_screen_rect()          # place ribbon where the user is typing
+            if r:
+                overlay_ui.place(r[0] + r[2] // 2, r[1] + r[3])
         rec.begin()
         set_state("rec")
         beep(cfg, 880, 60)
