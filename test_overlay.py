@@ -64,6 +64,18 @@ for kind, wait in [("low", 1.2), ("high", 1.2), ("speech", 0.9), ("silence", 1.6
     ImageGrab.grab(bbox=bbox).save(f"{OUT}/aurora_{kind}.png")
     print(f"captured aurora_{kind}.png")
 
+# thinking animation: processing state must self-animate (moving + non-flat)
+ov.processing()
+time.sleep(0.6)
+d1 = ov._disp.copy()
+time.sleep(0.35)
+d2 = ov._disp.copy()
+ImageGrab.grab(bbox=bbox).save(f"{OUT}/aurora_thinking.png")
+thinking_ok = float(np.abs(d2 - d1).sum()) > 0.05 and float(d2.sum()) > 0.1
+print(f"thinking animation: {'MOVING' if thinking_ok else 'STATIC/FLAT (bad)'} "
+      f"(captured aurora_thinking.png)")
+ov.show()  # back to listening for the style check
+
 # click-through / no-activate styles
 st = ov.win.ex_style()
 need = {"LAYERED": 0x80000, "TRANSPARENT": 0x20, "NOACTIVATE": 0x8000000, "TOOLWINDOW": 0x80}

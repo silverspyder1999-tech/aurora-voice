@@ -135,8 +135,20 @@ class Overlay:
                 self._last_raw = raw
             else:
                 target = self._disp * 0.9
-        else:
-            target = np.zeros(self.BANDS)           # processing/hidden: settle
+        elif self._state == "processing":
+            # "Thinking" animation: while the transcript is being processed, the
+            # ribbon drives itself so you know it's still working. Two soft energy
+            # packets sweep the width in counter-motion, braiding the strands into
+            # a slow swirl, over a steady bloom heartbeat.
+            t = now - self._t0
+            idx = np.arange(self.BANDS)
+            a = (math.sin(t * 1.7) * 0.5 + 0.5) * (self.BANDS - 1)
+            b = (math.sin(t * 1.05 + 2.2) * 0.5 + 0.5) * (self.BANDS - 1)
+            target = (0.80 * np.exp(-((idx - a) ** 2) / 8.0)
+                      + 0.55 * np.exp(-((idx - b) ** 2) / 4.5))
+            self._pulse = max(self._pulse, 0.30 + 0.22 * (math.sin(t * 3.2) * 0.5 + 0.5))
+        else:  # hidden
+            target = np.zeros(self.BANDS)           # settle
 
         # springs: instant-ish attack, under-damped release (one soft bounce)
         up = target > self._disp
@@ -161,6 +173,11 @@ class Overlay:
             sat_t = 0.30 + 0.60 * (1.0 - noisiness)
         else:
             hue_t, sat_t = 45.0, 0.45               # calm amber at rest
+        if self._state == "processing":
+            # cool shifting palette (cyan <-> violet) so "thinking" reads as a
+            # distinct mode from amber "listening".
+            hue_t = 200.0 + 65.0 * math.sin((now - self._t0) * 0.8)
+            sat_t = 0.85
         self._hue += (hue_t - self._hue) * min(1.0, dt / 0.10)
         self._sat += (sat_t - self._sat) * min(1.0, dt / 0.15)
 
