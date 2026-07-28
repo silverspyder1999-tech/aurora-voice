@@ -4,4 +4,6 @@ __pycache__/
 .models/
 *.log
 config.toml
+# local config backups, e.g. config.toml.bak-YYYYmmdd-HHMMSS
+config.toml.*
 aurora.heartbeat

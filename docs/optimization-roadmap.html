@@ -1,0 +1,850 @@
+<title>Aurora Voice — Optimization & Scope of Work</title>
+<style>
+:root{
+  color-scheme: light;
+  --surface-1:#fcfcfb; --plane:#f9f9f7;
+  --ink-1:#0b0b0b; --ink-2:#52514e; --ink-muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --hair:rgba(11,11,11,0.10);
+  --s1:#2a78d6; --s2:#eb6834;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --seq-100:#cde2fb; --seq-250:#86b6ef; --seq-450:#2a78d6; --seq-600:#184f95;
+  --mono:ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --surface-1:#1a1a19; --plane:#0d0d0d;
+    --ink-1:#ffffff; --ink-2:#c3c2b7; --ink-muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --hair:rgba(255,255,255,0.10);
+    --s1:#3987e5; --s2:#d95926;
+    --seq-100:#0d366b; --seq-250:#184f95; --seq-450:#3987e5; --seq-600:#86b6ef;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-1:#1a1a19; --plane:#0d0d0d;
+  --ink-1:#ffffff; --ink-2:#c3c2b7; --ink-muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --hair:rgba(255,255,255,0.10);
+  --s1:#3987e5; --s2:#d95926;
+  --seq-100:#0d366b; --seq-250:#184f95; --seq-450:#3987e5; --seq-600:#86b6ef;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--ink-1);font-family:var(--sans);
+  line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 96px}
+
+/* header */
+header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--plane) 88%,transparent);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--hair)}
+.hbar{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-weight:650;letter-spacing:-.01em;margin-right:auto;display:flex;align-items:center;gap:9px}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--s1);flex:none}
+nav a{color:var(--ink-2);text-decoration:none;font-size:13px;padding:5px 9px;border-radius:7px}
+nav a:hover{background:var(--hair);color:var(--ink-1)}
+.tbtn{background:none;border:1px solid var(--hair);color:var(--ink-2);border-radius:7px;
+  padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}
+.tbtn:hover{color:var(--ink-1)}
+
+h1{font-size:clamp(28px,4.4vw,44px);line-height:1.1;letter-spacing:-.025em;margin:44px 0 10px;font-weight:680}
+h2{font-size:23px;letter-spacing:-.015em;margin:60px 0 6px;font-weight:650;scroll-margin-top:72px}
+h3{font-size:16px;margin:26px 0 8px;font-weight:640}
+p{margin:10px 0;color:var(--ink-2);max-width:74ch}
+.lede{font-size:17px;color:var(--ink-2);max-width:72ch}
+.sub{color:var(--ink-muted);font-size:13.5px;margin:2px 0 0}
+code{font-family:var(--mono);font-size:.885em;background:var(--hair);padding:1px 5px;border-radius:4px}
+a{color:var(--s1)}
+
+.card{background:var(--surface-1);border:1px solid var(--hair);border-radius:12px;padding:20px 22px;margin:18px 0}
+
+/* hero */
+.hero{background:var(--surface-1);border:1px solid var(--hair);border-radius:14px;padding:28px 26px;margin:26px 0 8px;
+  display:flex;gap:30px;align-items:center;flex-wrap:wrap}
+.hero .fig{font-size:clamp(46px,7vw,66px);font-weight:680;letter-spacing:-.035em;line-height:1;color:var(--crit)}
+.hero .txt{flex:1;min-width:270px}
+
+/* kpi */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:12px;margin:18px 0}
+.kpi{background:var(--surface-1);border:1px solid var(--hair);border-radius:11px;padding:14px 15px}
+.kpi .k{font-size:11.5px;text-transform:uppercase;letter-spacing:.055em;color:var(--ink-muted);font-weight:600}
+.kpi .v{font-size:26px;font-weight:670;letter-spacing:-.02em;margin:5px 0 1px}
+.kpi .d{font-size:12.5px;color:var(--ink-2)}
+.bad{color:var(--crit)} .ok{color:var(--good)} .warnc{color:var(--warn)}
+
+/* charts */
+figure{margin:22px 0;background:var(--surface-1);border:1px solid var(--hair);border-radius:12px;padding:18px 20px 12px}
+figcaption{font-size:12.5px;color:var(--ink-muted);margin-top:10px;padding-top:9px;border-top:1px solid var(--grid)}
+.ftitle{font-weight:640;font-size:15px;margin-bottom:2px}
+.fsub{font-size:12.5px;color:var(--ink-muted);margin-bottom:12px}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.gl{stroke:var(--grid);stroke-width:1}
+.ax{stroke:var(--axis);stroke-width:1}
+.tick{fill:var(--ink-muted);font-size:11px;font-family:var(--sans);font-variant-numeric:tabular-nums}
+.dlab{fill:var(--ink-1);font-size:11.5px;font-weight:620;font-family:var(--sans);font-variant-numeric:tabular-nums}
+.refl{stroke:var(--crit);stroke-width:2;stroke-dasharray:5 4}
+.reft{fill:var(--crit);font-size:11px;font-weight:640}
+.hit{fill:transparent;cursor:pointer}
+.tog{background:none;border:1px solid var(--hair);color:var(--ink-2);border-radius:6px;padding:3px 9px;
+  font:inherit;font-size:11.5px;cursor:pointer;float:right}
+.tog:hover{color:var(--ink-1)}
+
+/* tooltip */
+#tip{position:fixed;z-index:99;pointer-events:none;opacity:0;transition:opacity .11s;
+  background:var(--surface-1);border:1px solid var(--hair);border-radius:9px;padding:8px 11px;
+  font-size:12.5px;box-shadow:0 8px 26px rgba(0,0,0,.17);max-width:260px}
+#tip .tt{font-weight:640;margin-bottom:2px;color:var(--ink-1)}
+#tip .tv{color:var(--ink-2);font-variant-numeric:tabular-nums}
+
+/* tables */
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--grid);vertical-align:top}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-muted);font-weight:640}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:color-mix(in srgb,var(--s1) 5%,transparent)}
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:620;
+  padding:2px 8px;border-radius:20px;border:1px solid var(--hair);color:var(--ink-2);white-space:nowrap}
+.pill.p1070{border-color:color-mix(in srgb,var(--s1) 45%,transparent);color:var(--s1)}
+.pill.p5080{border-color:color-mix(in srgb,var(--s2) 45%,transparent);color:var(--s2)}
+.pill.crit{border-color:color-mix(in srgb,var(--crit) 50%,transparent);color:var(--crit)}
+.pill.good{border-color:color-mix(in srgb,var(--good) 50%,transparent);color:var(--good)}
+.pill.warn{border-color:color-mix(in srgb,var(--warn) 60%,transparent);color:var(--ink-2)}
+
+/* filters */
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:16px 0 4px;
+  padding:12px 14px;background:var(--surface-1);border:1px solid var(--hair);border-radius:11px}
+.flabel{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-muted);font-weight:640;margin-right:2px}
+.chip{background:none;border:1px solid var(--hair);color:var(--ink-2);border-radius:20px;
+  padding:4px 12px;font:inherit;font-size:12.5px;cursor:pointer}
+.chip:hover{color:var(--ink-1)}
+.chip[aria-pressed="true"]{background:var(--s1);border-color:var(--s1);color:#fff}
+.count{margin-left:auto;font-size:12.5px;color:var(--ink-muted);font-variant-numeric:tabular-nums}
+
+/* recs */
+.rec{background:var(--surface-1);border:1px solid var(--hair);border-radius:12px;padding:0;margin:11px 0;overflow:hidden}
+.rec.hidden{display:none}
+.rec>summary{padding:15px 18px;cursor:pointer;list-style:none;display:flex;gap:13px;align-items:flex-start}
+.rec>summary::-webkit-details-marker{display:none}
+.rec[open]>summary{border-bottom:1px solid var(--grid)}
+.rank{font-variant-numeric:tabular-nums;font-weight:680;font-size:13px;color:var(--ink-muted);
+  min-width:24px;padding-top:1px}
+.rtitle{font-weight:640;font-size:15px;letter-spacing:-.01em;flex:1;min-width:200px;color:var(--ink-1)}
+.rmeta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.rbody{padding:15px 18px 17px}
+.rbody p{margin:8px 0}
+.rbody p:first-child{margin-top:0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13px;margin:12px 0 0;
+  padding-top:12px;border-top:1px solid var(--grid)}
+.kv dt{color:var(--ink-muted);font-weight:600}
+.kv dd{margin:0;color:var(--ink-2)}
+pre{background:var(--plane);border:1px solid var(--hair);border-radius:9px;padding:12px 14px;
+  overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.5;color:var(--ink-1)}
+pre code{background:none;padding:0}
+.pend{border:1px dashed var(--hair);border-radius:11px;padding:18px 20px;color:var(--ink-muted);font-size:13.5px}
+
+/* phases */
+.phase{background:var(--surface-1);border:1px solid var(--hair);border-radius:12px;padding:18px 20px;margin:12px 0}
+.phead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.pnum{font-size:11.5px;font-weight:660;letter-spacing:.05em;text-transform:uppercase;color:var(--s1)}
+.ptitle{font-weight:650;font-size:16px}
+.peff{margin-left:auto;font-size:12.5px;color:var(--ink-muted)}
+ul{color:var(--ink-2);padding-left:20px;max-width:74ch}
+li{margin:5px 0}
+.note{border-left:3px solid var(--s1);padding:2px 0 2px 14px;margin:16px 0;color:var(--ink-2);font-size:14px}
+.note.crit{border-color:var(--crit)}
+.note strong{color:var(--ink-1)}
+@media(max-width:640px){.hero{padding:20px}.rec>summary{flex-wrap:wrap}}
+</style>
+
+<header>
+  <div class="hbar">
+    <div class="brand"><span class="dot"></span>Aurora Voice — Optimization &amp; Scope of Work</div>
+    <nav>
+      <a href="#evidence">Evidence</a>
+      <a href="#cause">Root cause</a>
+      <a href="#hw">Hardware</a>
+      <a href="#bench">Benchmarks</a>
+      <a href="#recs">Recommendations</a>
+      <a href="#sow">Scope</a>
+    </nav>
+    <button class="tbtn" id="themeBtn" type="button">Theme</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+<h1>Aurora Voice: optimization &amp; scope of work</h1>
+<p class="lede">A measured review of the live build across both target machines — the <strong>GTX 1070 8&nbsp;GB</strong> work PC and the <strong>RTX 5080 16&nbsp;GB</strong> home PC. Every number below is measured on-device or extracted from <code>aurora.log</code>; nothing is estimated unless labelled.</p>
+<p class="sub">Generated 2026-07-25 · repo <code>silverspyder1999-tech/aurora-voice</code> @ <code>4cf2201</code> · 390 real dictations analysed</p>
+
+<div class="hero">
+  <div class="fig">0<span style="font-size:.42em;font-weight:600;letter-spacing:0"> / 390</span></div>
+  <div class="txt">
+    <div style="font-weight:650;font-size:17px;margin-bottom:3px">dictations met the project's own latency target</div>
+    <p style="margin:0">SPEC.md acceptance bar <strong>A1</strong> is p50 ≤ 700&nbsp;ms from key-release to text. Across 390 logged dictations on the GTX 1070, not one came in under that bar and the median was <strong>2.16&nbsp;s</strong>. The bar was written against the RTX 5080 and silently carried over to a card that cannot meet it with the current configuration.</p>
+  </div>
+</div>
+
+<h2 id="evidence">1 · Evidence — what the log actually says</h2>
+<p>Aurora has been logging every dictation since 2026-07-04. That file is the most valuable artefact in the project: 457 recordings started, 390 completed with full timing. This is real usage, not a benchmark.</p>
+
+<div class="kpis">
+  <div class="kpi"><div class="k">Median total</div><div class="v bad">2.16 s</div><div class="d">target ≤ 0.70 s</div></div>
+  <div class="kpi"><div class="k">p95 total</div><div class="v bad">15.95 s</div><div class="d">target ≤ 1.50 s</div></div>
+  <div class="kpi"><div class="k">Worst single</div><div class="v bad">520.7 s</div><div class="d">18.5 s of audio · RTF 27.7</div></div>
+  <div class="kpi"><div class="k">Dropped</div><div class="v warnc">22</div><div class="d">4.8% — "busy with previous"</div></div>
+  <div class="kpi"><div class="k">No cleanup</div><div class="v warnc">314</div><div class="d">80.5% of dictations</div></div>
+  <div class="kpi"><div class="k">Median utterance</div><div class="v">10.7 s</div><div class="d">p90 32.9 s · max 100 s</div></div>
+</div>
+
+<figure>
+  <button class="tog" data-table="t-tail" type="button">Table view</button>
+  <div class="ftitle">The tail is the problem, not the median</div>
+  <div class="fsub">Share of 390 dictations slower than each threshold, key-release to text</div>
+  <div id="c-tail"></div>
+  <div id="t-tail" hidden></div>
+  <figcaption>Every dictation missed the 0.7&nbsp;s target. One in ten took longer than ten seconds. The distribution is bimodal — a fast GPU path and a catastrophic CPU path — not a slow average.</figcaption>
+</figure>
+
+<figure>
+  <button class="tog" data-table="t-len" type="button">Table view</button>
+  <div class="ftitle">You dictate in long paragraphs</div>
+  <div class="fsub">Utterance length distribution, seconds of held audio</div>
+  <div id="c-len"></div>
+  <div id="t-len" hidden></div>
+  <figcaption>Median 10.7&nbsp;s, p90 32.9&nbsp;s, longest 100.2&nbsp;s. This single fact drives three findings: multi-window decoding breaks <code>initial_prompt</code> biasing, instant mode's quadratic cost becomes unusable, and holding a key for 30+ seconds is poor ergonomics.</figcaption>
+</figure>
+
+<div class="note crit"><strong>Cleanup has been dead on this machine.</strong> 314 of 390 dictations recorded <code>llm 0.00s</code>. Port <code>11435</code> — the WSL <code>ollama-bridge</code> that <code>config.toml</code> points at — is closed, and WSL Ollama is not running. Where cleanup <em>did</em> run (76 dictations), median total was <strong>9.65&nbsp;s</strong> against the A2 bar of 1.2&nbsp;s.</div>
+
+<h2 id="cause">2 · Root cause — an eight-day config drift</h2>
+<p>The dominant cause of the latency tail is not the code. It is that <strong>this machine has been running <code>large-v3</code> on the CPU for every dictation.</strong></p>
+
+<div class="card">
+<h3 style="margin-top:0">The chain</h3>
+<ul>
+  <li><code>config.toml</code> is listed in <code>.gitignore</code> — it is per-machine and never syncs between the two PCs.</li>
+  <li>This machine's <code>config.toml</code> was written <strong>2026-07-04</strong>.</li>
+  <li>Commit <code>1c6d50f</code> (<strong>2026-07-12</strong>, from the home PC) added the VRAM-aware auto-gate with four new keys: <code>device</code>, <code>cpu_model</code>, <code>gpu_min_free_mib</code>, <code>gpu_poll_s</code>.</li>
+  <li>None of those keys exist in this machine's config, so all four fall back to defaults.</li>
+  <li><code>gpu_min_free_mib</code> defaults to <strong>4000</strong>. Free VRAM on this desktop sits around <strong>3212 MiB</strong>. The gate therefore selects <strong>CPU</strong>.</li>
+  <li><code>cpu_model</code> defaults to <code>model</code>, so the CPU fallback is <strong>large-v3</strong> — measured at <strong>RTF 1.93</strong>, slower than real time.</li>
+</ul>
+<p style="margin-bottom:0">The feature built specifically to protect an 8&nbsp;GB card was shipped from the 16&nbsp;GB machine and never activated on the machine that needed it.</p>
+</div>
+
+<div class="note"><strong>The structural fix is not "edit the config".</strong> It is to stop putting hardware-dependent decisions in an untracked file. A detected hardware profile ships in git; a stale local config cannot then silently disable it. That is section&nbsp;3.</div>
+
+<h2 id="hw">3 · Dual-hardware support</h2>
+<p>A single configuration cannot serve both machines — this is a hard constraint, not a preference. CTranslate2 requires compute capability ≥ 7.0 for <code>float16</code>; the GTX 1070 is CC 6.1.</p>
+
+<pre><code>&gt;&gt;&gt; ctranslate2.get_supported_compute_types('cuda')   # GTX 1070, this machine
+{'int8_float32', 'int8', 'float32'}                  # float16 is absent</code></pre>
+
+<p>Meanwhile <code>app/config.py</code> still defaults <code>compute_type</code> to <code>"float16"</code> — correct for Blackwell, silently degraded to <code>float32</code> here (roughly 6&nbsp;GB, which will not fit alongside a desktop).</p>
+
+<div class="tblwrap">
+<table>
+<thead><tr><th>Dimension</th><th>GTX 1070 · work</th><th>RTX 5080 · home</th></tr></thead>
+<tbody>
+<tr><td>Architecture</td><td>Pascal, CC 6.1</td><td>Blackwell, sm_120</td></tr>
+<tr><td>VRAM</td><td>8 GB</td><td>16 GB</td></tr>
+<tr><td>Usable compute type</td><td><code>int8</code> only</td><td><code>float16</code> or <code>int8</code></td></tr>
+<tr><td>large-v3 warm, ~11 s audio</td><td>1.93 s <span class="pill">measured</span></td><td>0.59 s <span class="pill">PHASE0</span></td></tr>
+<tr><td>Free VRAM in practice</td><td>~3.2 GB</td><td>~6 GB (237 MB at peak co-residency)</td></tr>
+<tr><td>Ollama transport</td><td><code>127.0.0.1:11435</code> WSL bridge</td><td><code>127.0.0.1:11434</code> native</td></tr>
+<tr><td>CUDA generation</td><td colspan="2">12.8 — the only toolkit family supporting <em>both</em> Pascal and Blackwell. CUDA 13 removed Pascal.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Proposed: a detected profile layer</h3>
+<p>Probe the GPU once at startup and select a built-in preset; <code>config.toml</code> keeps overriding everything, so nothing existing breaks.</p>
+<pre><code># app/profiles.py  (new, ~40 lines)
+#   probe: ctranslate2.get_supported_compute_types('cuda') + total VRAM
+#   -> pick a preset -> DEFAULTS &lt; preset &lt; config.toml
+
+PROFILES = {
+  "pascal-8gb":    dict(compute_type="int8",    model="distil-large-v3",
+                        cpu_model="distil-small.en", gpu_min_free_mib=1200,
+                        beam_size=1, cleanup_model="qwen3.5:2b"),
+  #   NB: gpu_min_free_mib is only safe once the load/release watermarks are
+  #   separated (rec 2). distil-large-v3 is 992 MiB, so on a desktop sitting at
+  #   ~2.1 GB free it fits and stays; large-v3 at 2008 MiB does not.
+  "blackwell-16gb":dict(compute_type="float16", model="large-v3",
+                        cpu_model="distil-small.en", gpu_min_free_mib=5200,
+                        beam_size=1, cleanup_model="qwen3.5:4b"),
+  "cpu-only":      dict(compute_type="int8",    model="distil-small.en",
+                        device="cpu", beam_size=1, cleanup_enabled=False),
+}</code></pre>
+<p>The thresholds are derived from measurement, not guessed: <code>large-v3</code> int8 occupies <strong>2008 MiB</strong> and <code>distil-large-v3</code> int8 <strong>992 MiB</strong>, so a 4000 MiB gate is roughly double what the model actually needs and is what forced this machine onto the CPU.</p>
+
+<h2 id="bench">4 · Measured benchmarks</h2>
+<p class="sub">GTX 1070, <code>test.wav</code> 11.26 s, faster-whisper 1.2.1 / CTranslate2 4.8.1. Transcript text compared per run.</p>
+
+<figure>
+  <button class="tog" data-table="t-bench" type="button">Table view</button>
+  <div class="ftitle">Transcription wall-clock by configuration</div>
+  <div class="fsub">Lower is better · 11.26 s of audio unless noted</div>
+  <div id="c-bench"></div>
+  <div id="t-bench" hidden></div>
+  <figcaption>The current live configuration is the CPU row — 19.3 s for 10 s of audio. Simply keeping the work on the GPU is a 10× win before any other change.</figcaption>
+</figure>
+
+<figure>
+  <button class="tog" data-table="t-inst" type="button">Table view</button>
+  <div class="ftitle">Instant mode falls behind after ~5 seconds of speech</div>
+  <div class="fsub">Cost of one streaming tick vs. length of buffered audio</div>
+  <div id="c-inst"></div>
+  <div id="t-inst" hidden></div>
+  <figcaption><code>stream_loop</code> re-transcribes the <em>entire</em> growing buffer every tick, so cost grows with utterance length while ticks keep firing — roughly O(T²) work. A tick exceeds its own 1.0 s budget once the buffer holds about 5 s of speech. Given a p90 utterance of 32.9 s, instant mode is structurally unusable as written.</figcaption>
+</figure>
+
+<h2 id="defects">5 · Correctness &amp; robustness</h2>
+<p>An independent audit read every module and ran live checks on this machine. It examined eight suspected defects and <strong>refuted five of them</strong> — those refutations are recorded below, because knowing what is <em>not</em> broken is worth as much as knowing what is.</p>
+
+<h3>Refuted — these are fine, leave them alone</h3>
+<div class="tblwrap">
+<table>
+<thead><tr><th>Suspicion</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td><code>Global\</code> mutex singleton is broken by UAC token filtering</td><td><span class="pill good">refuted</span> Ran it with two concurrent processes: first returns <code>True</code> (err 0), second <code>False</code> (err 183). This account can create <code>Global\</code> objects. <strong>The docstring's premise is also wrong</strong> — the "two instances observed" were one process: <code>venv\Scripts\pythonw.exe</code> is the CPython launcher trampoline and the second PID is its child.</td></tr>
+<tr><td>GDI/DC handle leak in the layered-window overlay</td><td><span class="pill good">refuted</span> 60 create→push→destroy cycles leaked 1 GDI handle total. A deliberate 30-window control leaked 90 GDI / 32 USER, so the counter was sensitive. <code>ulw.py</code> is clean.</td></tr>
+<tr><td>Audio ring buffer costs CPU / risks dropouts</td><td><span class="pill good">refuted</span> <code>deque.extend</code> in the callback: <strong>0.017 ms</strong>. <code>np.fromiter</code> per overlay frame: <strong>0.057 ms</strong> — 0.3% of a core at 60 fps.</td></tr>
+<tr><td>Clipboard retry loop busy-spins</td><td><span class="pill good">refuted</span> <code>_open_clipboard</code> has already slept 10 × 0.05 s before returning False. Bounded at ~2.65 s per helper, not a spin.</td></tr>
+<tr><td>A user profile wipes the other built-in profiles</td><td><span class="pill good">refuted</span> Siblings survive. <em>But</em> a narrower version of this bug is real — see D9.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Confirmed defects</h3>
+<div class="tblwrap">
+<table>
+<thead><tr><th>#</th><th>Defect</th><th>Severity</th><th>Evidence</th></tr></thead>
+<tbody>
+<tr><td>D1</td><td><strong>Dropped dictations are completely silent.</strong> <code>maxsize=1</code> queue; a third press is discarded. The drop path prints to a log invisible under <code>pythonw</code> and — unlike every other failure — <strong>does not beep</strong>.</td><td><span class="pill crit">high</span></td><td>22 occurrences in the log. You spoke a full sentence, heard both normal beeps, and got nothing.</td></tr>
+<tr><td>D2</td><td><strong>Every hotkey action runs inside the low-level keyboard hook.</strong> <code>suppress=True</code> handlers execute synchronously inside <code>WH_KEYBOARD_LL</code>. That includes a <strong>67.66 ms blocking <code>winsound.Beep</code></strong> and a pystray icon update that writes a temp <code>.ico</code> <em>to disk</em>.</td><td><span class="pill crit">high</span></td><td>Measured. While the hook blocks, <strong>the whole system's keyboard input stalls</strong>. <code>LowLevelHooksTimeout</code> is unset → 300 ms default; on repeated overruns Windows <strong>silently removes the hook</strong> and F9 dies with no error.</td></tr>
+<tr><td>D3</td><td><strong>The watchdog kills a healthy Aurora during startup.</strong> The 120 s grace only applies to launches the watchdog itself performed; anything else (logon autostart, manual run) is judged against a stale heartbeat from the previous session.</td><td><span class="pill crit">high</span></td><td>Reproduced live during this session: a healthy instance was killed 6 s into warmup. It survived only because the reload hit a warm page cache (8.8 s vs 51.6 s). <strong>A consistently cold 60 s+ load is an infinite kill loop.</strong></td></tr>
+<tr><td>D4</td><td><strong>A long dictation trips the same watchdog.</strong> The worker beats when it picks up a job and in <code>finally</code> — never <em>during</em>. A job over 60 s gets Aurora force-killed and the dictation lost.</td><td><span class="pill crit">high</span></td><td>Near-miss in the log: <code>44.1s audio → asr 44.67s (cpu)</code> against a 60 s threshold. Add the 8 s cleanup budget and a ~50 s dictation crosses it.</td></tr>
+<tr><td>D5</td><td><strong>Instant mode types the same text twice.</strong> A tick can outlive <code>join(timeout=3)</code> while holding the ASR lock; <code>InstantSession</code> has no lock and <code>_out()</code> emits before updating <code>_committed</code>, so <code>finalize()</code> re-types the prefix.</td><td><span class="pill crit">high</span></td><td>Deterministic repro: <code>'hello world thishello world this is a test'</code>. Only fires when <code>streaming.enabled = true</code>.</td></tr>
+<tr><td>D6</td><td><strong>Injection destroys non-text clipboard content.</strong> <code>EmptyClipboard()</code> drops every format, but only <code>CF_UNICODETEXT</code> is snapshotted. Copy a file or an image, dictate once, and it is gone — the docstring says "not restored", which understates it. Separately, if <code>SetClipboardData</code> fails on all retries the prior <em>text</em> is never restored either.</td><td><span class="pill warn">med-high</span></td><td>Code-level, unambiguous. Fix (b) is a <code>try/finally</code> around the paste.</td></tr>
+<tr><td>D7</td><td><strong>The overlay burns a full CPU core and never hits its frame rate.</strong> <code>_render</code> costs 30.2 ms/frame against a 16.67 ms budget, so the <code>if elapsed &lt; budget: sleep</code> guard never fires — it is a tight loop for the entire recording <em>and</em> the processing phase.</td><td><span class="pill warn">medium</span></td><td>Measured, stable over 3 runs. Max achievable 32.8 fps on one core. On the CPU-fallback path it is stealing a core directly from Whisper.</td></tr>
+<tr><td>D8</td><td><strong>Dictating only "New paragraph." wipes the clipboard and pastes nothing.</strong> The break marker survives the join, then <code>final.strip()</code> returns <code>""</code>; <code>inject("")</code> still runs <code>EmptyClipboard</code> + paste.</td><td><span class="pill warn">medium</span></td><td>Confirmed by running <code>process_text</code>. Fix: <code>if not text: continue</code>.</td></tr>
+<tr><td>D9</td><td><strong>Overriding one key of a profile silently deletes the rest of it.</strong> The config merge is shallow one level too high. Adding a terminal to <code>[profiles.code]</code> silently re-enables LLM cleanup on your code dictation; tweaking <code>[profiles.email].style</code> deletes its <code>match</code> list, so the profile can never fire again.</td><td><span class="pill warn">medium</span></td><td>Confirmed by running it. Fix is a 6-line recursive merge.</td></tr>
+<tr><td>D10</td><td><strong><code>Cleaner.clean()</code> can still eat your words.</strong> The except tuple misses <code>json.JSONDecodeError</code> and an <code>AttributeError</code> on a <code>None</code> content field. Either escapes to the worker's broad handler and <strong>the whole dictation is discarded</strong> — contradicting the module's own stated rule.</td><td><span class="pill warn">medium</span></td><td>An Ollama proxy returning an HTML error page is enough. Fix: <code>except Exception</code>.</td></tr>
+<tr><td>D11</td><td><code>context.restore_target()</code> can block the worker forever against a hung app — <code>SetFocus</code> across threads delivers <code>WM_SETFOCUS</code> synchronously with no timeout. Everything else on the inject path is bounded (~8 s worst case).</td><td><span class="pill warn">medium</span></td><td>Code-level. The only unbounded call in the pipeline.</td></tr>
+<tr><td>D12</td><td>Two <code>set_state()</code> calls sit outside the 2026-07-21 safety net, so a pystray/overlay exception still kills the worker — recovery is now a watchdog restart plus a 10–50 s model reload rather than a silent wedge.</td><td><span class="pill warn">medium</span></td><td>Latent — no occurrence in 459 logged dictations.</td></tr>
+<tr><td>D13</td><td>The overlay hides and the tray goes idle <strong>while you are recording the next dictation</strong>, because the previous job's <code>finally</code> fires <code>set_state("idle")</code>. You reasonably conclude Aurora stopped listening.</td><td><span class="pill">low-med</span></td><td>The 22 drops prove you do press F9 during processing.</td></tr>
+<tr><td>D14</td><td><code>nvidia-smi</code> is spawned on the critical path of every transcription — <strong>67 ms</strong> median for a full subprocess. In instant mode that is one process spawn per second.</td><td><span class="pill">low-med</span></td><td>Measured. Fix: read the cache the watcher already maintains.</td></tr>
+<tr><td>D15</td><td>Both beeps are recorded into the clip (<code>rec.begin()</code> precedes the 880 Hz tone; the 440 Hz tone precedes <code>rec.end()</code>). In instant mode up to 3 extra seconds of room noise get transcribed and typed.</td><td><span class="pill">low</span></td><td>Fix: beep before <code>begin()</code> and after <code>end()</code>.</td></tr>
+<tr><td>D16</td><td>Toggle mode leaks the F9 key-up to other apps and re-triggers on auto-repeat — <em>holding</em> F9 would toggle ~30×/s. Not active in the shipped <code>hold</code> config, which is why it has never bitten.</td><td><span class="pill">low</span></td><td>Latent.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note"><strong>Answering the hotkey questions directly.</strong> <code>suppress=True</code> on both edges means F9 is <em>totally</em> swallowed — Excel's Recalculate, VS's toggle-breakpoint and so on never see it. The hook keeps firing over elevated windows so recording still starts, but UIPI blocks the injection, so text silently never appears. And yes, the hook can die silently — D2 is the live trigger.</div>
+
+<h2 id="gaps">6 · Feature gaps vs. the field</h2>
+<p>Measured against Wispr Flow, superwhisper, VoiceInk, Handy, WhisperWriter, Talon/Cursorless, Dragon and Windows Voice Access.</p>
+
+<h3>Where Aurora is genuinely ahead</h3>
+<p>Worth stating plainly, because three of these are things nobody else in the survey does at all:</p>
+<ul>
+<li><strong>Re-focusing the original dictation target before injecting.</strong> <code>capture_target()</code> / <code>restore_target()</code> with <code>AttachThreadInput</code> to defeat the Win32 foreground lock. This solves the field's single most-reported bug class — text landing in the wrong window. Handy's most-commented open issue (56 comments) is exactly this. <strong>No other tool surveyed does it.</strong></li>
+<li><strong>Clipboard snapshot and restore</strong> with contention retry and a typing fallback. VoiceInk added this only after complaints; Handy still lacks it.</li>
+<li><strong>Watchdog + heartbeat + single-instance mutex.</strong> The only tool surveyed that self-heals. A comparable project has five separate "silently stops working" issues open.</li>
+<li><strong>Cleanup guardrails</strong> that fall back to raw text — preventing the exact bug VoiceInk shipped twice (LLM answering the dictation instead of cleaning it).</li>
+<li><strong>Per-app profiles that disable cleanup for code and terminals</strong>, a correct streaming implementation, and an overlay that is better craft than anything in the field.</li>
+</ul>
+
+<h3>The structural gap</h3>
+<div class="note crit"><strong>You cannot fix anything by voice.</strong> Aurora's entire editing vocabulary is <code>ctrl+z</code>. Every serious tool has converged on speaking at existing text to change it — Wispr's Command Mode, Dragon's Select-and-Say, Cursorless, Voice Access's correction commands. This is the one feature that separates a dictation toy from a dictation tool, and it is the loudest unmet demand in user discussion.</div>
+
+<div class="tblwrap">
+<table>
+<thead><tr><th>Gap</th><th>Who has it</th><th>Difficulty (solo, local-only)</th></tr></thead>
+<tbody>
+<tr><td><strong>Voice editing of existing text</strong> — "change X to Y"</td><td>Wispr, Dragon, Cursorless, Voice Access</td><td>Medium. UIA <code>ITextRangeProvider::FindText</code> + <code>Select</code>, then reuse Aurora's existing paste. Needs <code>comtypes</code>. <strong>Caveat:</strong> Chromium's UIA support is "very limited" by its own docs, so this will not work in Chrome, VS Code, Slack or Discord — and Windows Terminal, where most of your dictation goes, is unverified. Probe before building.</td></tr>
+<tr><td><strong>Transcript history + re-paste hotkey</strong></td><td>Wispr, superwhisper, VoiceInk</td><td><strong>Very low</strong> — a ring buffer and two hotkeys. Best value-per-hour on the list. Today, if a paste lands wrong or the queue drops it, the words are gone.</td></tr>
+<tr><td><strong>Auto-endpoint, double-tap latch, Esc-to-cancel</strong></td><td>All of them</td><td>Low. Silero is already a dependency.</td></tr>
+<tr><td><strong>Vocabulary that learns from corrections</strong></td><td>Wispr (auto-adds, marks with ✨), Dragon</td><td>Medium-hard properly; <strong>low</strong> for the 80% version — a tray "that was wrong → what should it be?" plus replacement rules, which Aurora has none of.</td></tr>
+<tr><td>Snippets / text expansion</td><td>Wispr, superwhisper, VoiceInk, Talon, Dragon</td><td>Low — a TOML map applied in <code>commands.py</code>.</td></tr>
+<tr><td>Screen / selected-text context</td><td>Wispr (screenshots), VoiceInk</td><td>Medium, same UIA plumbing. A purely local version is a real differentiator — commenters call the cloud version "user hostile".</td></tr>
+<tr><td>Language auto-detect</td><td>Wispr (100+, mid-sentence)</td><td>Trivial — <code>language</code> is pinned to <code>en</code> and large-v3 is multilingual for free. Costs a little latency, so make it per-profile.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note"><strong>One more free win found in the audit:</strong> <code>asr.py::_run</code> passes only <code>beam_size</code>, <code>language</code>, <code>vad_filter</code> and <code>initial_prompt</code>. That leaves <code>hallucination_silence_threshold</code> off, <code>repetition_penalty</code> at 1, and <code>condition_on_previous_text</code> at its default <code>True</code> — the documented cause of Whisper's repetition loops, which faster-whisper's own example code sets to <code>False</code>. Aurora logs "no speech detected" 30 times in 390 dictations. Four keyword arguments.</div>
+
+<h2 id="recs">7 · Recommendations</h2>
+<p>Ranked by measured impact per unit of effort. Filter by machine and by size.</p>
+
+<div class="filters">
+  <span class="flabel">Machine</span>
+  <button class="chip" data-f="m" data-v="all" aria-pressed="true" type="button">All</button>
+  <button class="chip" data-f="m" data-v="1070" aria-pressed="false" type="button">GTX 1070</button>
+  <button class="chip" data-f="m" data-v="5080" aria-pressed="false" type="button">RTX 5080</button>
+  <span class="flabel" style="margin-left:14px">Effort</span>
+  <button class="chip" data-f="e" data-v="all" aria-pressed="true" type="button">All</button>
+  <button class="chip" data-f="e" data-v="config" aria-pressed="false" type="button">Config only</button>
+  <button class="chip" data-f="e" data-v="small" aria-pressed="false" type="button">Small</button>
+  <button class="chip" data-f="e" data-v="medium" aria-pressed="false" type="button">Medium</button>
+  <button class="chip" data-f="e" data-v="large" aria-pressed="false" type="button">Large</button>
+  <span class="count" id="recCount"></span>
+</div>
+<div id="recList"></div>
+
+<h2 id="sow">8 · Scope of work</h2>
+<div id="sowBody"></div>
+
+<h2 id="reject">9 · Deliberately rejected</h2>
+<p>Investigated and ruled out. Recording these matters as much as the recommendations — each is a plausible-sounding path that wastes days.</p>
+<div class="tblwrap">
+<table>
+<thead><tr><th>Option</th><th>Why not</th></tr></thead>
+<tbody id="rejBody"></tbody>
+</table>
+</div>
+
+<h2 id="method">10 · Method &amp; caveats</h2>
+<div class="card" style="margin-bottom:0">
+<ul style="margin:0">
+  <li><strong>Telemetry</strong> — 390 dictations parsed from <code>aurora.log</code> (2026-07-04 → 2026-07-25). Percentiles are nearest-rank.</li>
+  <li><strong>Benchmarks</strong> — run on this GTX 1070 against <code>test.wav</code>. Clips beyond 11.26 s were built by tiling that file, so the 30 s instant-mode figure is synthetic; the ~5 s crossover is a clean measurement and is the number to plan against.</li>
+  <li><strong>RTX 5080 figures</strong> come from <code>PHASE0_REPORT.md</code> (2026-07-03), not re-measured in this pass.</li>
+  <li><strong>Not measured:</strong> <code>large-v3-turbo</code> — the <code>distil-large-v3</code> download alone took 281.7 s on the C: HDD and a second one blew the time box. Parakeet-via-ONNX throughput on this CPU is projected from a different processor and must be benchmarked before it is trusted.</li>
+  <li><strong>Verified directly in installed source:</strong> the <code>hotwords</code> behaviour (<code>faster_whisper/transcribe.py:1200</code>), CTranslate2's supported compute types, the config-drift chain, and the live device selection.</li>
+</ul>
+</div>
+
+</div>
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+// ---------- theme ----------
+(function(){
+  var b=document.getElementById('themeBtn');
+  b.addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme');
+    var dark=cur?cur==='dark':matchMedia('(prefers-color-scheme:dark)').matches;
+    document.documentElement.setAttribute('data-theme',dark?'light':'dark');
+    drawAll();
+  });
+})();
+
+// ---------- data ----------
+var TAIL=[{x:'0.7 s',n:390,p:100.0,note:'the A1 target'},{x:'1.5 s',n:282,p:72.3,note:'the A1 p95 bar'},
+  {x:'3 s',n:140,p:35.9},{x:'5 s',n:104,p:26.7},{x:'10 s',n:39,p:10.0},
+  {x:'30 s',n:8,p:2.1},{x:'60 s',n:7,p:1.8}];
+
+var LEN=[{x:'p10',v:2.8},{x:'p25',v:5.4},{x:'p50',v:10.7},{x:'p75',v:19.5},
+  {x:'p90',v:32.9},{x:'p95',v:44.1},{x:'p99',v:60.4}];
+
+var BENCH=[
+  {x:'distil-large-v3 · GPU',v:0.876,d:'992 MiB VRAM · glossary words degraded'},
+  {x:'large-v3 · GPU · beam 1',v:1.448,d:'identical transcript to beam 5'},
+  {x:'large-v3 · GPU · beam 5',v:1.926,d:'2008 MiB VRAM · the intended config'},
+  {x:'distil-small.en · CPU',v:3.12,d:'10 s clip · RTF 0.31'},
+  {x:'large-v3 · CPU',v:19.30,d:'10 s clip · RTF 1.93 — WHAT RUNS TODAY',cur:true}
+];
+
+var INST=[{x:2,v:0.831},{x:5,v:1.052},{x:10,v:1.597},{x:20,v:2.673},{x:30,v:20.845}];
+
+var RECS=[
+ {r:1,t:'Restore the VRAM auto-gate on this machine',m:['1070'],e:'config',imp:'10× on the common path',
+  why:'The single highest-value change in the review, and it is four lines of TOML. The code already supports it; the keys were simply never added here after commit <code>1c6d50f</code>.',
+  code:'[asr]\nmodel            = "large-v3"\ncpu_model        = "distil-small.en"   # was unset -> large-v3 (RTF 1.93, unusable)\ndevice           = "auto"\ngpu_min_free_mib = 4000               # LEAVE HIGH — see rec 2 for why lowering it backfires\nbeam_size        = 1                  # measured -24.8%, identical text',
+  ev:'<span class="pill good">applied 2026-07-25</span> Measured back-to-back on an identical 10 s clip: <strong>14.48 s → 2.01 s (7.2×)</strong>, RTF 1.45 → 0.20. Model load 28.8 s → 1.1 s, which also pulls startup clear of the watchdog window in D3. Accuracy cost is real — distil-small.en rendered "RTX 5080" as "RTX5,080"; rec 9 (<code>hotwords</code>) is the counter.',
+  risk:'None — reversible, config only. Backup at <code>config.toml.bak-20260725-121706</code>.'},
+
+ {r:1.05,t:'Give gpu_min_free_mib hysteresis — it currently cannot be tuned',m:['1070','5080'],e:'small',imp:'Unblocks GPU use on an 8 GB card',
+  why:'<code>_pick()</code> loads the GPU model when <code>free &gt;= gpu_min_free_mib</code>, and <code>_watch()</code> releases it when <code>free &lt; gpu_min_free_mib</code> — the <em>same</em> threshold for both directions. Because <code>nvidia-smi</code> counts Aurora\'s own allocation, loading the model immediately drops free VRAM by the model size. So for any threshold T, the band <code>[T, T + model_size)</code> is a load/release loop, and each cycle pays a full model reload.',
+  ev:'Concretely on this card with large-v3 (2008 MiB): the GPU is used <em>and stays used</em> only when free VRAM ≥ ~6008 MiB. Free VRAM here measures 2134–3212 MiB, so the gate never engages — which is why the machine sat on CPU. <strong>Lowering the threshold, as this report first suggested, would have landed it inside the thrash band.</strong> No single value works for large-v3 at this desktop load.',
+  code:'# separate the watermarks\nload_if   = free >= gpu_min_free_mib + model_mib   # room to load AND keep it\nrelease_if= free <  release_floor_mib             # e.g. 600 MiB, a genuine emergency',
+  risk:'Low. Until this lands, the honest options on the 1070 are a quiet desktop, or <code>device = "cuda"</code> with a model small enough to fit (distil-large-v3 at 992 MiB).'},
+
+ {r:2,t:'Bound the instant-mode transcription window',m:['1070','5080'],e:'medium',imp:'>10× on utterances past 15 s',
+  why:'<code>stream_loop</code> re-transcribes the whole growing buffer each tick, so work grows quadratically with speech length. Feed the model a trailing window instead and keep <code>InstantSession</code>\'s commit bookkeeping unchanged.',
+  ev:'Measured tick cost: 2 s buffer → 0.831 s; 5 s → 1.052 s (already over the 1.0 s budget); 30 s → 20.845 s. Your p90 utterance is 32.9 s.',
+  risk:'Low. The LocalAgreement-2 logic is already isolated and unit-tested in <code>test_streaming.py</code>.'},
+
+ {r:3,t:'Switch vocabulary biasing from initial_prompt to hotwords',m:['1070','5080'],e:'small',imp:'~20–25% relative rare-word error reduction',
+  why:'Verified in the installed source: <code>transcribe.py:1200</code> rebuilds the prompt inside the decode loop and passes <code>hotwords</code> on <em>every</em> 30 s window, while <code>initial_prompt</code> only seeds the token history and scrolls away. <code>app/asr.py</code> passes only the latter — the weaker of the two mechanisms.',
+  ev:'Matters disproportionately here because p90 utterance length is 32.9 s, so a large share of dictations span two or more decode windows. Keep the list under ~223 tokens; do not set <code>prefix</code>, which is the only thing that disables hotwords.',
+  code:'segments, _info = model.transcribe(\n    audio, beam_size=self.beam_size, language=self.language,\n    vad_filter=self.vad_filter,\n    initial_prompt=self.initial_prompt,\n    hotwords=self.hotwords,          # NEW: re-applied every window\n)',
+  risk:'Near zero.'},
+
+ {r:4,t:'Add a hardware profile layer',m:['1070','5080'],e:'medium',imp:'Removes the whole class of drift bugs',
+  why:'The root cause of finding&nbsp;1 is that hardware-dependent settings live in an untracked file. Detect the GPU at startup, select a shipped preset, let <code>config.toml</code> override. Presets travel in git; a stale local config can no longer silently disable a feature built for that machine.',
+  ev:'<code>float16</code> genuinely does not exist on the 1070 (CC 6.1 &lt; 7.0), and <code>config.py</code> still defaults to it — so the two machines cannot share a config even in principle.',
+  risk:'Low, if precedence is strictly DEFAULTS &lt; profile &lt; config.toml.'},
+
+ {r:5,t:'Evaluate distil-large-v3 as the 1070 GPU model',m:['1070'],e:'small',imp:'2.2× faster, half the VRAM',
+  why:'Measured 0.876 s vs 1.926 s, and 992 MiB vs 2008 MiB. On a card that routinely sits at ~3.2 GB free, halving the model footprint is what keeps the auto-gate on the GPU at all.',
+  ev:'Caveat from the same run: distil garbled the glossary word "Ollama" → "olima" and "5080" → "5,080". Land recommendation 3 (hotwords) first — stronger per-window biasing is the natural counter — then re-test on real dictations containing glossary terms.',
+  risk:'Medium on accuracy. Gate the switch on a real A/B, not the single benchmark clip.'},
+
+ {r:6,t:'Fix the dead cleanup path',m:['1070'],e:'small',imp:'Restores 80% of dictations to cleaned output',
+  why:'314 of 390 dictations ran with no cleanup because the WSL <code>ollama-bridge</code> on port 11435 is down. The app degrades correctly — raw text still pastes — but the headline feature has been silently absent for weeks.',
+  ev:'Where cleanup did run, median total was 9.65 s against a 1.2 s bar — so simply restarting the bridge is not enough; the model choice needs revisiting on an 8 GB card (see 7).',
+  risk:'None.'},
+
+ {r:7,t:'Reconsider qwen3.5:4b for cleanup on the 8 GB card',m:['1070'],e:'medium',imp:'Removes the 9.65 s cleanup median',
+  why:'It is a hybrid Gated-DeltaNet sparse-MoE multimodal model with a vision encoder — the vision stack is dead weight for text cleanup, and at ~3.4 GB it competes directly with Whisper for VRAM on a card with ~3.2 GB free. The home PC has room for it; this one does not.',
+  ev:'Home-PC PHASE0 measured llama3.2 3B cleanup at 0.26 s warm. The 9.65 s median here is VRAM contention, not model quality.',
+  risk:'Low. Options: a 2B-class model, cleanup on CPU, or a dedicated punctuation model (Apache-2.0 <code>punctuators</code>, MIT <code>oliverguhr/fullstop</code>) plus a regex filler stripper.'},
+
+ {r:8,t:'Make the cleanup guard two-sided',m:['1070','5080'],e:'small',imp:'Closes a silent data-loss path',
+  why:'<code>cleanup.py</code> rejects output longer than <code>max(2×len, len+80)</code> — it catches the LLM expanding or answering, but not paraphrasing, silently dropping content, or returning a terse wrong answer. Add a token-retention floor and fall back to raw when too many source words vanish.',
+  ev:'The failure modes are documented, not hypothetical: superwhisper\'s own docs name "AI addressing unasked questions" and "unrequested comments" as hallucination classes, and the VoiceInk fine-tuning writeup concluded the instruction-following gap "couldn\'t be closed with prompting" across every model from 2B to 35B.',
+  risk:'Low — the fallback already exists, this only widens what trips it.'},
+
+ {r:9,t:'Pin the CUDA 12.8 generation across both machines',m:['1070','5080'],e:'config',imp:'Prevents an unbootable work PC',
+  why:'CUDA 13 removed Pascal support outright. CUDA 12.8 is the first toolkit with Blackwell sm_120 and the last family carrying Pascal — it is the only generation that covers both your machines.',
+  ev:'Concrete trap: <code>onnxruntime-gpu</code> ≥ 1.27 builds against CUDA 13.0 and will not run on the 1070. Pin ≤ 1.26.x before adding any ONNX GPU dependency.',
+  risk:'Low, but do it before the next dependency bump, not after.'},
+
+ {r:10,t:'Prototype Parakeet-TDT-0.6B-v2 on CPU via onnx-asr',m:['1070','5080'],e:'medium',imp:'Potentially frees the GPU entirely',
+  why:'A 600M transducer with better English accuracy than large-v3 (6.05 vs 7.44 avg WER) that runs on CPU through ONNX Runtime with no PyTorch and no NeMo. If it holds up, the CPU fallback stops being a disaster and the GPU is freed for the cleanup model — which fixes findings 1, 6 and 7 at once.',
+  ev:'<span class="pill warn">unverified on this CPU</span> The published 36 RTFx figure is a 9800X3D. Handy ships exactly this configuration today, so the path is proven in principle. Long-form chunking is mandatory — ONNX exports cap around 20–30 s and your p95 utterance is 44 s.',
+  risk:'Medium. This is a prototype-and-measure item, not a commitment.'},
+
+ {r:11,t:'Auto-endpointing on silence, with the hotkey kept as manual stop',m:['1070','5080'],e:'medium',imp:'Removes the 30-second key-hold',
+  why:'Your p90 utterance is 32.9 s of holding a key down. Silero VAD v6.2.1 (MIT, ~2 MB, sub-millisecond per 32 ms chunk) can end the recording on sustained silence.',
+  ev:'Start the threshold at 2000 ms — that is faster-whisper\'s own <code>min_silence_duration_ms</code> default — and keep F9 as an override. Note that Wispr Flow, the most polished commercial tool here, deliberately does <em>not</em> auto-endpoint; hands-free mode is stopped manually. Treat this as opt-in.',
+  risk:'Medium. Cutting someone off mid-thought is worse than a long key-hold.'},
+
+ {r:1.1,t:'Stop silently discarding dictations',m:['1070','5080'],e:'small',imp:'Recovers ~5% of all speech',
+  why:'The job queue is <code>maxsize=1</code>, so a third press while one dictation is in flight is thrown away. The drop path logs to a file that is invisible under <code>pythonw</code> and — alone among every failure path — <strong>does not beep</strong>. You spoke, heard both normal beeps, and got nothing.',
+  ev:'22 occurrences in the log. A queued job is just a float32 array, so there is no reason for the cap to be 1.',
+  code:'jobs = queue.Queue(maxsize=8)\n...\nexcept queue.Full:\n    print("  (queue full - dropped)")\n    beep(cfg, 300)          # never drop silently\n    set_state("idle")',
+  risk:'None.'},
+
+ {r:1.2,t:'Get blocking work out of the keyboard hook',m:['1070','5080'],e:'small',imp:'Stops system-wide input stalls; prevents F9 dying',
+  why:'Handlers registered with <code>suppress=True</code> run synchronously inside the <code>WH_KEYBOARD_LL</code> hook procedure. Aurora does a <strong>67.66 ms blocking <code>winsound.Beep</code></strong> there, plus a pystray icon update that writes a temp <code>.ico</code> to disk — on a machine whose C: is a 2 TB HDD. While that runs, every application\'s keyboard input is stalled, not just Aurora\'s.',
+  ev:'Measured: beep 67.66 ms, tray 4.74 ms median / 7.03 ms max, context calls &lt;0.07 ms. <code>LowLevelHooksTimeout</code> is unset on this machine → 300 ms default. Overrun once and Windows skips the hook; overrun repeatedly and it <strong>silently removes it</strong> — F9 simply stops working with no error anywhere.',
+  code:'# one line each removes ~90% of the in-hook time\nthreading.Thread(target=winsound.Beep, args=(880, 60), daemon=True).start()',
+  risk:'Low. The full version — handlers only set a flag and signal an Event — is the correct fix, but the beep alone buys most of the margin.'},
+
+ {r:1.3,t:'Stop the watchdog killing a healthy Aurora',m:['1070','5080'],e:'small',imp:'Removes a boot-loop risk',
+  why:'Two related holes. The 120 s startup grace only applies to launches the watchdog itself performed, so an autostart or manual launch is judged against a stale heartbeat from the previous session. And nothing beats <em>during</em> a job, so a long dictation looks like a hang.',
+  ev:'Reproduced live in this session: a healthy instance was killed 6 s into warmup and survived only because the reload hit a warm page cache (8.8 s vs 51.6 s cold). Separately the log shows <code>44.1s audio → asr 44.67s</code> against a 60 s kill threshold — add the 8 s cleanup budget and a ~50 s dictation crosses it.',
+  code:'# app/main.py - beat before the slow model load, and on a timer during jobs\n_beat()                     # first line of main(), before asr.Transcriber(cfg)\n# and a daemon loop that beats every HEARTBEAT_S regardless of queue state',
+  risk:'Low. If a cold load ever consistently exceeds 60 s this is currently an infinite kill/relaunch loop.'},
+
+ {r:1.4,t:'Add transcript history and a re-paste hotkey',m:['1070','5080'],e:'small',imp:'Insurance against every other failure',
+  why:'Final text goes to <code>aurora.log</code> and nowhere else. If a paste lands in the wrong window, or the queue drops it, or the watchdog restarts mid-job, the words are gone. A ring buffer plus two hotkeys — paste-last and copy-last — makes every other failure on this list recoverable instead of fatal.',
+  ev:'Best value-per-hour item in the review. Wispr Flow, superwhisper and VoiceInk all ship it; comparable open-source tools have catastrophic-loss issues open specifically for lacking it.',
+  risk:'None.'},
+
+ {r:1.5,t:'Turn on the Whisper decode guards',m:['1070','5080'],e:'small',imp:'Fewer hallucinated and repeated segments',
+  why:'<code>asr.py::_run</code> passes only four arguments, leaving three guards at defaults that faster-whisper\'s own example code overrides.',
+  code:'segments, _info = model.transcribe(\n    audio, beam_size=self.beam_size, language=self.language,\n    vad_filter=self.vad_filter, initial_prompt=self.initial_prompt,\n    hotwords=self.hotwords,\n    condition_on_previous_text=False,      # documented cause of repetition loops\n    repetition_penalty=1.1,\n    hallucination_silence_threshold=2.0,\n)',
+  ev:'Measured cost of <code>condition_on_previous_text=False</code>: 1.758 s → 1.621 s, identical text. Aurora logs "no speech detected" 30 times in 390 dictations, consistent with silence artefacts.',
+  risk:'Low, but re-test on real audio — the benchmark could not reproduce a hallucination loop either way on synthetic clips.'},
+
+ {r:2.1,t:'Fix the instant-mode double-typing race',m:['1070','5080'],e:'small',imp:'Prevents corrupted output',
+  why:'A streaming tick can outlive <code>join(timeout=3)</code> while holding the ASR lock. <code>InstantSession</code> has no lock, and <code>_out()</code> emits <em>before</em> updating <code>_committed</code>, so <code>finalize()</code> reads a stale counter and re-types the prefix.',
+  ev:'Deterministic repro produced <code>\'hello world thishello world this is a test\'</code> — the whole prefix typed twice, unspaced, into whatever you were dictating into. Only fires when <code>streaming.enabled = true</code>, so it is latent today.',
+  risk:'Low. Fix: a lock around <code>tick</code>/<code>finalize</code>/<code>_out</code>, and skip <code>finalize()</code> if the thread is still alive after the join.'},
+
+ {r:3.1,t:'Make clipboard restore survive every exit path',m:['1070','5080'],e:'small',imp:'Stops destroying copied files and images',
+  why:'Two bugs. <code>EmptyClipboard()</code> drops every format but only <code>CF_UNICODETEXT</code> is snapshotted — so copying a file in Explorer or an image in Snipping Tool, then dictating once, <strong>deletes it</strong> rather than merely failing to restore it. And when <code>SetClipboardData</code> fails on all retries, the code falls back to typing and returns without restoring the prior text either.',
+  ev:'The module docstring says non-text content "is not restored", which understates what actually happens.',
+  risk:'Low. Minimum fix: <code>try/finally</code> around the paste, and skip the clipboard route entirely when the clipboard is non-empty but holds no text.'},
+
+ {r:3.2,t:'Catch every cleanup exception, not four of them',m:['1070','5080'],e:'small',imp:'Closes a dictation-loss path',
+  why:'<code>cleanup.py</code> catches <code>URLError, OSError, KeyError, TimeoutError</code>. A <code>json.JSONDecodeError</code> or a <code>None</code> content field escapes to the worker\'s broad handler and <strong>the entire dictation is discarded</strong> — directly contradicting the module\'s stated rule that any failure falls back to the raw transcript.',
+  ev:'An Ollama proxy returning an HTML error page is enough to trigger it.',
+  code:'except Exception:              # was: (URLError, OSError, KeyError, TimeoutError)\n    return text, time.time() - t0, False',
+  risk:'None — the function already returns raw text on that path.'},
+
+ {r:3.3,t:'Do not inject empty text',m:['1070','5080'],e:'small',imp:'Fixes a clipboard-wipe on a common command',
+  why:'Dictating only "New paragraph." produces a break marker that <code>final.strip()</code> then reduces to an empty string. <code>inject("")</code> still runs <code>EmptyClipboard</code> and pastes nothing — so a single voice command silently wipes your clipboard.',
+  ev:'Confirmed by running <code>process_text</code>: <code>\'New paragraph.\'</code> and <code>\'new line\'</code> both return <code>\'\'</code>. Inline use in a longer sentence works correctly.',
+  code:'if not text:\n    continue        # in the worker, before inject()',
+  risk:'None.'},
+
+ {r:3.4,t:'Make the config merge two levels deep',m:['1070','5080'],e:'small',imp:'Stops profiles silently self-destructing',
+  why:'<code>cfg.setdefault(section, {}).update(values)</code> is shallow one level too high. Sibling profiles survive, but overriding a single key of a profile replaces the whole table.',
+  ev:'Confirmed by running it: adding a terminal to <code>[profiles.code]</code> drops <code>cleanup = false</code> and silently re-enables the LLM on your code dictation; setting <code>[profiles.email].style</code> deletes its <code>match</code> list, so the profile can never fire again — and it fails quietly rather than erroring.',
+  code:'def _merge(dst, src):\n    for k, v in src.items():\n        if isinstance(v, dict) and isinstance(dst.get(k), dict):\n            _merge(dst[k], v)\n        else:\n            dst[k] = v\n_merge(cfg, user)',
+  risk:'None. Becomes load-bearing the moment the profile layer lands (rec 4).'},
+
+ {r:5.1,t:'Stop the overlay burning a full core',m:['1070','5080'],e:'small',imp:'Frees a core for the ASR',
+  why:'<code>_render</code> costs 30.2 ms/frame against a 16.67 ms budget, so the <code>if elapsed &lt; budget: sleep</code> guard never fires and the render thread is a tight loop for the whole recording <em>and</em> the processing phase.',
+  ev:'Measured, stable over 3 runs: max achievable 32.8 fps on one core. Stage breakdown — supersampled draw 4.59 ms, uint16 premultiply 7.25 ms, blur 7.83 ms, additive glow 5.02 ms, LANCZOS downscale 5.55 ms. The same draw at SS=1 costs 0.51 ms. On the CPU-fallback path this is stealing a core directly from Whisper.',
+  code:'# config-only mitigation, zero visual cost:\n[ui]\noverlay_fps = 30      # at least lets the loop sleep instead of spin',
+  risk:'Low. <code>SS = 1</code> plus a smaller blur radius cuts it to roughly a third at some cost in edge smoothness.'},
+
+ {r:5.2,t:'Cache the VRAM reading',m:['1070','5080'],e:'small',imp:'67 ms off every dictation',
+  why:'<code>free_vram_mib()</code> spawns <code>nvidia-smi</code> on the critical path of every transcription, inside the lock. A background watcher already polls the same value.',
+  ev:'Measured 67 ms median (62–69 ms). Tolerable once per dictation; in instant mode it is a process spawn every second plus 67 ms of dead time per tick.',
+  risk:'None — read the cache the watcher maintains.'},
+
+ {r:11.5,t:'Voice editing of existing text',m:['1070','5080'],e:'large',imp:'The feature that separates a dictation tool from a toy',
+  why:'Aurora\'s entire editing vocabulary is <code>ctrl+z</code>. Every serious competitor has converged on speaking at existing text to change it. The architecture is reachable: a second hotkey → transcribe → parse "change X to Y" → UIA <code>ITextRangeProvider::FindText</code> → <code>Select()</code> → then reuse the clipboard-paste Aurora already has.',
+  ev:'<span class="pill warn">probe first</span> Chromium classifies its own UIA support as "very limited", so this will not work in Chrome, VS Code, Slack or Discord. Windows Terminal — where the bulk of your dictation goes — is <strong>unverified</strong> and should be probed before any code is written. Needs <code>comtypes</code>, which is not currently in the venv.',
+  risk:'High scope risk, not technical risk. Prefer a numbered-candidate menu ("choose 3") over open-ended re-dictation — otherwise a misheard correction spawns another misheard correction.'}
+];
+
+var REJ=[
+ ['SimulStreaming / AlignAtt for instant mode','Technically the best streaming policy for Whisper, but PyTorch-checkpoint only (no CTranslate2) and ≥10 GB VRAM recommended. Pascal has no usable fp16 throughput and fp32 large-v3 will not fit in 8 GB. Architecturally unavailable.'],
+ ['Canary-Qwen-2.5B / Granite Speech / Qwen3-ASR','Top of the accuracy leaderboard, but multi-billion-parameter GPU-bound models. On 8 GB Pascal without fp16 they are impractical, and none has a light Windows ONNX path.'],
+ ['Running Parakeet through NeMo','Model cards list Ampere and newer only, Linux preferred, and NeMo pulls in pynini — whose pip install is unsupported on Windows. Use the ONNX export instead: same weights, no NeMo.'],
+ ['NeMo WFST inverse text normalisation','Same pynini-on-Windows dead end. Not worth it for number and currency formatting.'],
+ ['<code>float16</code> or <code>int8_float16</code> on the 1070','CTranslate2 requires CC ≥ 7.0; on 6.1 both silently fall back to fp32 — slower and larger. The existing <code>int8</code> is already optimal for this card.'],
+ ['TEN VAD','Its licence forbids use that "competes with Agora\'s offerings" — vague and legally live. Its accuracy advantage over Silero is entirely vendor-reported with no neutral benchmark.'],
+ ['Semantic turn detection (LiveKit, Pipecat Smart Turn)','Every published benchmark is conversational turn-taking. None is validated on free-form monologue dictation, which is what Aurora actually is. LiveKit\'s model licence also forbids standalone use.'],
+ ['Streaming zipformer models in sherpa-onnx','2023-vintage, LibriSpeech-trained, and emit no punctuation or casing. Wrong tool for dictation.'],
+ ['Prompt-engineering the cleanup LLM out of its failure modes','Directly contradicted by the best available evidence — the one team that attacked this hard concluded the gap could not be closed with prompting at any model size, and solved it with fine-tuning instead.'],
+ ['Grammar-constrained decoding to force word preservation','Conceptually appealing, but zero documented implementations exist for dictation cleanup. A token-retention check (recommendation 8) buys most of the benefit for twenty lines.']
+];
+
+var SOW=[
+ {n:'Phase 1',t:'Stop the bleeding',eff:'~30 minutes · config only',items:[
+  'Add the four missing <code>[asr]</code> keys to this machine\'s <code>config.toml</code> — <code>cpu_model</code>, <code>gpu_min_free_mib</code>, <code>device</code>, <code>beam_size</code>.',
+  'Set <code>overlay_fps = 30</code> so the render loop sleeps instead of spinning a core.',
+  'Bring the WSL <code>ollama-bridge</code> back up on port 11435 and confirm cleanup engages.',
+  'Re-run the log analysis after ~20 dictations to confirm the median actually moved.'],
+  out:'Median latency should fall from 2.16 s toward the ~1 s range and the multi-minute outliers should disappear. No code touched, fully reversible.'},
+
+ {n:'Phase 2',t:'Stop losing user speech',eff:'~half a day',items:[
+  'Raise the job queue cap and <strong>beep on drop</strong> — 22 dictations vanished with no signal.',
+  'Move the beeps (and ideally all hotkey work) off the keyboard-hook thread.',
+  'Beat the heartbeat before the model load and during long jobs, so the watchdog stops killing healthy instances.',
+  'Add the transcript ring buffer plus paste-last / copy-last hotkeys.',
+  'Turn on the three Whisper decode guards and switch vocabulary biasing to <code>hotwords</code>.'],
+  out:'Every failure mode becomes either recoverable or audible. This phase is almost entirely small, self-contained edits with no architectural risk — and it addresses the two things the competitive review rated Aurora "highly vulnerable" on.'},
+
+ {n:'Phase 3',t:'Correctness cleanup',eff:'~half a day',items:[
+  'Clipboard: restore on every exit path; stop destroying non-text formats.',
+  'Cleanup: catch every exception, and make the length guard two-sided with a token-retention floor.',
+  'Skip injection entirely when the final text is empty.',
+  'Make the config merge recursive — this becomes load-bearing the moment Phase 4 lands.',
+  'Pin the CUDA 12.8 generation in <code>requirements.txt</code> before the next dependency bump.'],
+  out:'The remaining confirmed defects from section 5, none of which require design decisions.'},
+
+ {n:'Phase 4',t:'The structural fix — dual hardware',eff:'~1–2 days',items:[
+  'Add <code>app/profiles.py</code>: probe VRAM and supported compute types, select a preset, let <code>config.toml</code> override.',
+  'Ship <code>pascal-8gb</code>, <code>blackwell-16gb</code> and <code>cpu-only</code> presets.',
+  'A/B <code>distil-large-v3</code> against <code>large-v3</code> on real dictations containing glossary terms.',
+  'Right-size the cleanup model for the 8 GB card.',
+  'Bound the instant-mode transcription window and lock <code>InstantSession</code>.'],
+  out:'Both machines configure themselves correctly from a file that ships in git. The class of bug that caused this entire review — a per-machine untracked config silently disabling a feature built for that machine — stops being possible.'},
+
+ {n:'Phase 5',t:'Exploratory — measure before committing',eff:'~2–3 days, gated',items:[
+  'Benchmark Parakeet-TDT-0.6B-v2 via <code>onnx-asr</code> on this CPU against ~20 real dictations.',
+  'Probe whether Windows Terminal exposes a usable UIA TextPattern — this decides whether voice editing is worth building at all.',
+  'Prototype Silero-VAD auto-endpointing, double-tap latch and Esc-to-cancel as opt-in modes.'],
+  out:'Decisions, not necessarily changes. Every item here is explicitly allowed to fail — the deliverable is the measurement. Do not start the voice-editing build until the Terminal probe comes back positive.'}
+];
+
+// ---------- helpers ----------
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+var tip=document.getElementById('tip');
+function showTip(e,title,val){
+  tip.innerHTML='<div class="tt">'+title+'</div><div class="tv">'+val+'</div>';
+  tip.style.opacity=1;
+  var r=tip.getBoundingClientRect();
+  var x=e.clientX+14, y=e.clientY-10;
+  if(x+r.width>innerWidth-8)x=e.clientX-r.width-14;
+  if(y+r.height>innerHeight-8)y=innerHeight-r.height-8;
+  tip.style.left=x+'px'; tip.style.top=Math.max(8,y)+'px';
+}
+function hideTip(){tip.style.opacity=0}
+function el(t,a){var n=document.createElementNS('http://www.w3.org/2000/svg',t);
+  for(var k in a)n.setAttribute(k,a[k]);return n}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+
+// ---------- bar chart (horizontal) ----------
+function hbar(mount,data,opt){
+  var host=document.getElementById(mount); host.innerHTML='';
+  var W=760,rh=opt.rh||34,pad={t:8,r:96,b:26,l:opt.l||160},
+      H=pad.t+data.length*rh+pad.b;
+  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,role:'img'});
+  var max=Math.max.apply(null,data.map(function(d){return d.v})),
+      iw=W-pad.l-pad.r, sc=function(v){return v/max*iw};
+  // gridlines
+  var steps=4;
+  for(var i=0;i<=steps;i++){
+    var gx=pad.l+iw*i/steps, gv=max*i/steps;
+    svg.appendChild(el('line',{x1:gx,y1:pad.t,x2:gx,y2:pad.t+data.length*rh,class:'gl'}));
+    var tx=el('text',{x:gx,y:H-8,class:'tick','text-anchor':'middle'});
+    tx.textContent=(gv>=10?gv.toFixed(0):gv.toFixed(1))+(i===steps?opt.unit||'':'');
+    svg.appendChild(tx);
+  }
+  svg.appendChild(el('line',{x1:pad.l,y1:pad.t,x2:pad.l,y2:pad.t+data.length*rh,class:'ax'}));
+  data.forEach(function(d,i){
+    var y=pad.t+i*rh, bh=Math.min(15,rh-14), by=y+(rh-bh)/2, w=Math.max(2,sc(d.v));
+    svg.appendChild(el('rect',{x:pad.l,y:by,width:w,height:bh,rx:4,
+      fill:d.cur?css('--crit'):css('--seq-450')}));
+    var lb=el('text',{x:pad.l-10,y:y+rh/2+4,class:'tick','text-anchor':'end'});
+    lb.textContent=d.x; svg.appendChild(lb);
+    var vl=el('text',{x:pad.l+w+9,y:y+rh/2+4,class:'dlab'});
+    vl.textContent=d.v.toFixed(d.v<10?3:2).replace(/0+$/,'').replace(/\.$/,'')+(opt.unit||'');
+    svg.appendChild(vl);
+    var hit=el('rect',{x:pad.l,y:y,width:iw,height:rh,class:'hit'});
+    hit.addEventListener('mousemove',function(e){showTip(e,d.x,(d.d||'')+(d.d?'<br>':'')+d.v+(opt.unit||''))});
+    hit.addEventListener('mouseleave',hideTip);
+    svg.appendChild(hit);
+  });
+  host.appendChild(svg);
+}
+
+// ---------- column chart ----------
+function col(mount,data,opt){
+  var host=document.getElementById(mount); host.innerHTML='';
+  var W=760,H=opt.h||240,pad={t:22,r:14,b:44,l:46};
+  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,role:'img'});
+  var max=opt.max||Math.max.apply(null,data.map(function(d){return d[opt.k]}));
+  var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, bw=iw/data.length;
+  for(var i=0;i<=4;i++){
+    var gy=pad.t+ih-ih*i/4;
+    svg.appendChild(el('line',{x1:pad.l,y1:gy,x2:W-pad.r,y2:gy,class:'gl'}));
+    var t=el('text',{x:pad.l-8,y:gy+4,class:'tick','text-anchor':'end'});
+    t.textContent=(max*i/4).toFixed(0)+(i===4?(opt.unit||''):'');
+    svg.appendChild(t);
+  }
+  data.forEach(function(d,i){
+    var v=d[opt.k], h=Math.max(2,v/max*ih), x=pad.l+i*bw+bw*0.24, w=bw*0.52, y=pad.t+ih-h;
+    svg.appendChild(el('rect',{x:x,y:y,width:w,height:h,rx:4,fill:css('--seq-450')}));
+    var vl=el('text',{x:x+w/2,y:y-7,class:'dlab','text-anchor':'middle'});
+    vl.textContent=opt.fmt?opt.fmt(v):v; svg.appendChild(vl);
+    var xl=el('text',{x:x+w/2,y:H-24,class:'tick','text-anchor':'middle'});
+    xl.textContent=d.x; svg.appendChild(xl);
+    if(d.note){var nl=el('text',{x:x+w/2,y:H-10,class:'tick','text-anchor':'middle'});
+      nl.setAttribute('fill',css('--crit')); nl.textContent=d.note; svg.appendChild(nl)}
+    var hit=el('rect',{x:pad.l+i*bw,y:pad.t,width:bw,height:ih,class:'hit'});
+    hit.addEventListener('mousemove',function(e){showTip(e,opt.tt(d),opt.tv(d))});
+    hit.addEventListener('mouseleave',hideTip);
+    svg.appendChild(hit);
+  });
+  svg.appendChild(el('line',{x1:pad.l,y1:pad.t+ih,x2:W-pad.r,y2:pad.t+ih,class:'ax'}));
+  host.appendChild(svg);
+}
+
+// ---------- line chart w/ reference ----------
+function line(mount,data,opt){
+  var host=document.getElementById(mount); host.innerHTML='';
+  var W=760,H=250,pad={t:20,r:60,b:42,l:50};
+  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,role:'img'});
+  var xs=data.map(function(d){return d.x}), maxx=Math.max.apply(null,xs),
+      maxy=Math.max.apply(null,data.map(function(d){return d.v}));
+  var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
+  var X=function(v){return pad.l+v/maxx*iw}, Y=function(v){return pad.t+ih-v/maxy*ih};
+  for(var i=0;i<=4;i++){
+    var gy=pad.t+ih-ih*i/4;
+    svg.appendChild(el('line',{x1:pad.l,y1:gy,x2:W-pad.r,y2:gy,class:'gl'}));
+    var t=el('text',{x:pad.l-8,y:gy+4,class:'tick','text-anchor':'end'});
+    t.textContent=(maxy*i/4).toFixed(0)+(i===4?' s':''); svg.appendChild(t);
+  }
+  // budget reference line
+  var by=Y(opt.ref);
+  svg.appendChild(el('line',{x1:pad.l,y1:by,x2:W-pad.r,y2:by,class:'refl'}));
+  var rt=el('text',{x:W-pad.r+6,y:by+4,class:'reft'}); rt.textContent=opt.refLabel; svg.appendChild(rt);
+  var d='';
+  data.forEach(function(p,i){d+=(i?' L':'M')+X(p.x)+' '+Y(p.v)});
+  svg.appendChild(el('path',{d:d,fill:'none',stroke:css('--seq-450'),'stroke-width':2,
+    'stroke-linejoin':'round','stroke-linecap':'round'}));
+  data.forEach(function(p){
+    svg.appendChild(el('circle',{cx:X(p.x),cy:Y(p.v),r:4.5,fill:css('--seq-450'),
+      stroke:css('--surface-1'),'stroke-width':2}));
+    var vl=el('text',{x:X(p.x),y:Y(p.v)-12,class:'dlab','text-anchor':'middle'});
+    vl.textContent=p.v.toFixed(2)+'s'; svg.appendChild(vl);
+    var xl=el('text',{x:X(p.x),y:H-22,class:'tick','text-anchor':'middle'});
+    xl.textContent=p.x+' s'; svg.appendChild(xl);
+    var hit=el('circle',{cx:X(p.x),cy:Y(p.v),r:18,class:'hit'});
+    hit.addEventListener('mousemove',function(e){
+      showTip(e,p.x+' s of buffered speech',
+        'one tick costs '+p.v.toFixed(3)+' s<br>budget is '+opt.ref.toFixed(1)+' s'+
+        (p.v>opt.ref?'<br><strong>over budget</strong>':''))});
+    hit.addEventListener('mouseleave',hideTip);
+    svg.appendChild(hit);
+  });
+  svg.appendChild(el('line',{x1:pad.l,y1:pad.t+ih,x2:W-pad.r,y2:pad.t+ih,class:'ax'}));
+  var xt=el('text',{x:pad.l+iw/2,y:H-4,class:'tick','text-anchor':'middle'});
+  xt.textContent='audio buffered when the tick fires'; svg.appendChild(xt);
+  host.appendChild(svg);
+}
+
+// ---------- table views ----------
+function mkTable(id,head,rows){
+  var h='<div class="tblwrap"><table><thead><tr>';
+  head.forEach(function(c,i){h+='<th'+(i?' class="n"':'')+'>'+c+'</th>'});
+  h+='</tr></thead><tbody>';
+  rows.forEach(function(r){h+='<tr>';r.forEach(function(c,i){
+    h+='<td'+(i?' class="n"':'')+'>'+c+'</td>'});h+='</tr>'});
+  document.getElementById(id).innerHTML=h+'</tbody></table></div>';
+}
+document.querySelectorAll('.tog').forEach(function(b){
+  b.addEventListener('click',function(){
+    var t=document.getElementById(b.dataset.table),
+        c=document.getElementById(b.dataset.table.replace('t-','c-'));
+    var show=t.hasAttribute('hidden');
+    if(show){t.removeAttribute('hidden');c.setAttribute('hidden','');b.textContent='Chart view'}
+    else{t.setAttribute('hidden','');c.removeAttribute('hidden');b.textContent='Table view'}
+  });
+});
+
+// ---------- recommendations ----------
+var F={m:'all',e:'all'};
+function effLabel(e){return e==='config'?'config only':e}
+function renderRecs(){
+  var host=document.getElementById('recList'); host.innerHTML='';
+  var shown=0;
+  RECS.slice().sort(function(a,b){return a.r-b.r}).forEach(function(x){
+    var ok=(F.m==='all'||x.m.indexOf(F.m)>=0)&&(F.e==='all'||x.e===F.e);
+    if(!ok)return; shown++;
+    var d=document.createElement('details'); d.className='rec';
+    var mp=x.m.map(function(m){return '<span class="pill p'+m+'">'+(m==='1070'?'GTX 1070':'RTX 5080')+'</span>'}).join('');
+    d.innerHTML='<summary><span class="rank">'+shown+'</span>'+
+      '<span class="rtitle">'+x.t+'</span>'+
+      '<span class="rmeta">'+mp+'<span class="pill '+(x.e==='config'?'good':x.e==='small'?'':x.e==='large'?'crit':'warn')+'">'+effLabel(x.e)+'</span></span></summary>'+
+      '<div class="rbody"><p>'+x.why+'</p>'+
+      (x.code?'<pre><code>'+esc(x.code)+'</code></pre>':'')+
+      '<dl class="kv"><dt>Evidence</dt><dd>'+x.ev+'</dd>'+
+      '<dt>Impact</dt><dd>'+x.imp+'</dd>'+
+      '<dt>Risk</dt><dd>'+x.risk+'</dd></dl></div>';
+    host.appendChild(d);
+  });
+  document.getElementById('recCount').textContent=shown+' of '+RECS.length+' shown';
+}
+document.querySelectorAll('.chip').forEach(function(b){
+  b.addEventListener('click',function(){
+    F[b.dataset.f]=b.dataset.v;
+    document.querySelectorAll('.chip[data-f="'+b.dataset.f+'"]').forEach(function(o){
+      o.setAttribute('aria-pressed',String(o===b))});
+    renderRecs();
+  });
+});
+
+// ---------- scope + rejected ----------
+document.getElementById('sowBody').innerHTML=SOW.map(function(p){
+  return '<div class="phase"><div class="phead"><span class="pnum">'+p.n+'</span>'+
+    '<span class="ptitle">'+p.t+'</span><span class="peff">'+p.eff+'</span></div>'+
+    '<ul>'+p.items.map(function(i){return '<li>'+i+'</li>'}).join('')+'</ul>'+
+    '<p style="margin-bottom:0"><strong style="color:var(--ink-1)">Outcome —</strong> '+p.out+'</p></div>';
+}).join('');
+document.getElementById('rejBody').innerHTML=REJ.map(function(r){
+  return '<tr><td style="width:34%">'+r[0]+'</td><td>'+r[1]+'</td></tr>'}).join('');
+
+// ---------- draw ----------
+function drawAll(){
+  col('c-tail',TAIL,{k:'p',unit:'%',h:250,fmt:function(v){return v.toFixed(1)+'%'},
+    tt:function(d){return 'slower than '+d.x},
+    tv:function(d){return d.n+' of 390 dictations ('+d.p.toFixed(1)+'%)'+(d.note?'<br>'+d.note:'')}});
+  col('c-len',LEN,{k:'v',unit:' s',h:230,fmt:function(v){return v.toFixed(1)+'s'},
+    tt:function(d){return d.x+' utterance length'},tv:function(d){return d.v+' seconds of held audio'}});
+  hbar('c-bench',BENCH,{unit:' s',l:190,rh:38});
+  line('c-inst',INST,{ref:1.0,refLabel:'1.0 s budget'});
+}
+mkTable('t-tail',['Threshold','Dictations','Share'],TAIL.map(function(d){return [d.x,d.n,d.p.toFixed(1)+'%']}));
+mkTable('t-len',['Percentile','Seconds'],LEN.map(function(d){return [d.x,d.v.toFixed(1)]}));
+mkTable('t-bench',['Configuration','Wall-clock (s)'],BENCH.map(function(d){return [d.x+(d.d?' — '+d.d:''),d.v.toFixed(3)]}));
+mkTable('t-inst',['Buffered audio (s)','Tick cost (s)'],INST.map(function(d){return [d.x,d.v.toFixed(3)]}));
+drawAll(); renderRecs();
+</script>
