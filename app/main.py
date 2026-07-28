@@ -117,6 +117,23 @@ def main():
         print("[aurora-voice] another instance is already running - exiting")
         os._exit(0)  # hard exit: heavy imports (torch/ctranslate2) leave non-daemon
         # threads that would keep a plain `return` process alive as a zombie.
+
+    # ponytail: the worker is the only thing that beats, and it doesn't exist until
+    # after the ASR + LLM warmup below. Measured 2026-07-28: the cleanup warmup alone
+    # took 61.5s -- past aurora-watchdog's 60s stale threshold -- so the watchdog
+    # killed healthy boots in a loop and Aurora never reached ready. Beat from here
+    # until the worker takes over; it must STOP there, or a dead worker would still
+    # look alive and we'd lose the wedge detection this heartbeat exists for.
+    _boot_stop = threading.Event()
+
+    def _boot_beat():
+        while True:
+            _beat()
+            if _boot_stop.wait(5):
+                return
+
+    threading.Thread(target=_boot_beat, daemon=True).start()
+
     cfg = config.load()
     print(f"[aurora-voice] loading ASR model {cfg['asr']['model']} "
           f"({cfg['asr']['compute_type']}) ...")
@@ -218,6 +235,7 @@ def main():
                 _beat()
 
     threading.Thread(target=worker, daemon=True).start()
+    _boot_stop.set()   # worker owns the heartbeat from here; boot beat must stop
 
     key = cfg["hotkey"]["key"]
     mode = cfg["hotkey"]["mode"]

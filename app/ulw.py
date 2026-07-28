@@ -159,6 +159,13 @@ class LayeredWindow:
     def hide(self):
         _u32.ShowWindow(self.hwnd, SW_HIDE)
 
+    def alive(self) -> bool:
+        """Does the HWND still exist? A layered window can be destroyed out from
+        under us (WM_CLOSE dispatched by pump() -> DefWindowProc, a shell restart,
+        a session/desktop switch). push() only notices once we next draw, which
+        never happens while the overlay is hidden - so the idle path polls this."""
+        return bool(self.hwnd) and bool(_u32.IsWindow(self.hwnd))
+
     def destroy(self):
         """Release GDI resources + the window so a rebuild starts clean. Must run
         on the owning thread (the render thread that created it)."""

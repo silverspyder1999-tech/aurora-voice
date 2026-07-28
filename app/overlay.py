@@ -294,6 +294,14 @@ class Overlay:
                     if shown:
                         self.win.hide()
                         shown = False
+                    # ponytail: while hidden we never call push(), so the loop's
+                    # ONLY health check is dormant - a window destroyed while idle
+                    # (which is ~99% of the time) went unnoticed until the user hit
+                    # the hotkey and saw nothing. Observed live 2026-07-28: window
+                    # gone, render loop happily spinning here, nothing logged.
+                    # IsWindow is a few microseconds; poll it on the idle path.
+                    if not self.win.alive():
+                        raise RuntimeError("overlay window vanished while idle")
                     time.sleep(0.05)
                     continue
 
