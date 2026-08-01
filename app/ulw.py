@@ -22,11 +22,17 @@ _g32 = ctypes.windll.gdi32
 _u32.DefWindowProcW.argtypes = [wintypes.HWND, wintypes.UINT,
                                 wintypes.WPARAM, wintypes.LPARAM]
 _u32.DefWindowProcW.restype = ctypes.c_ssize_t
+# same 64-bit gotcha: HWND_TOPMOST is (HWND)-1 and must not truncate to c_int
+_u32.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND, ctypes.c_int,
+                              ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.UINT]
+_u32.SetWindowPos.restype = wintypes.BOOL
 
 WS_POPUP = 0x80000000
 WS_EX_LAYERED, WS_EX_TRANSPARENT = 0x00080000, 0x00000020
 WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST = 0x08000000, 0x00000080, 0x00000008
 SW_HIDE, SW_SHOWNOACTIVATE = 0, 4
+HWND_TOPMOST = -1
+SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE = 0x0001, 0x0002, 0x0010
 ULW_ALPHA, AC_SRC_OVER, AC_SRC_ALPHA = 2, 0, 1
 BI_RGB, DIB_RGB_COLORS = 0, 0
 
@@ -155,6 +161,12 @@ class LayeredWindow:
 
     def show(self):
         _u32.ShowWindow(self.hwnd, SW_SHOWNOACTIVATE)
+        # The WS_EX_TOPMOST style BIT can survive while the window is demoted out
+        # of the actual topmost z-band (DWM restart, fullscreen-optimization
+        # demotion) - it then renders BEHIND the app being dictated into, and
+        # nothing re-raises it for the life of the window. Re-assert every show.
+        _u32.SetWindowPos(self.hwnd, HWND_TOPMOST, 0, 0, 0, 0,
+                          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)
 
     def hide(self):
         _u32.ShowWindow(self.hwnd, SW_HIDE)
